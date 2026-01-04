@@ -10,7 +10,7 @@ It's designed to help you:
 - **Get AI-powered advice** 🤖 - Smart financial recommendations to help you level up your money game
 
 ## 🚀 What It Actually Does
-- **Bank Statement Parser** 🏦: Automatically extracts transactions from Monzo PDF statements *(still being worked on)*
+- **Bank Statement Parser** 🏦: Automatically extracts transactions from Monzo PDF statements **(still being worked on)**
 - **Expense Tracking** 💸: Categorize and monitor where your money's going (spoiler: it's probably food 🍕)
 - **Budget vs Actual** 📈: Compare what you planned to spend vs what you actually spent (oops 😅)
 - **Subscription Manager** 📱: Keep track of all those monthly subscriptions that keep adding up
