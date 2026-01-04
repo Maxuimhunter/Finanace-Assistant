@@ -230,3 +230,4 @@ Personal use project - built for individual financial management and life organi
 **Version**: 10+ (Best Version)
 **Technology**: Python, Streamlit, Excel Integration, AI-Powered Analytics
 **Age**: Born in 2006, currently in my second year of Uni 🎓
+**GitHub**: https://github.com/Maxuimhunter/Finanace-Assistant
