@@ -10,6 +10,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import datetime
 import io
 import re
+import tempfile
 from PIL import Image
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -415,28 +416,419 @@ def create_pdf_report(month=None, sections=None):
         doc.build(story)
         
         # Get PDF bytes
-        buffer.seek(0)
-        return buffer.getvalue()
-        
-    except Exception as e:
         print(f"Error creating PDF: {str(e)}")
         return None
 
-def create_enhanced_charts(wb, month):
-    try:
-        # Create or get the Charts sheet
-        if 'Charts' in wb.sheetnames:
-            charts_sheet = wb['Charts']
-        else:
-            charts_sheet = wb.create_sheet('Charts')
-        
-        charts_sheet.sheet_view.showGridLines = False
-
-        # Clear the sheet first
-        charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
-        for col in charts_sheet.columns:
-            for cell in col:
-                cell.value = None
+# Create enhanced charts
+# create_enhanced_charts(wb, month):
+# try:
+#     # Create or get the Charts sheet
+#     if 'Charts' in wb.sheetnames:
+#         charts_sheet = wb['Charts']
+#     else:
+#         charts_sheet = wb.create_sheet('Charts')
+# 
+#     charts_sheet.sheet_view.showGridLines = False
+# 
+#     # Clear the sheet first
+#     charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
+#     for col in charts_sheet.columns:
+#         for cell in col:
+#             cell.value = None
+# 
+#     # Enhanced title with gradient effect
+#     charts_sheet.merge_cells('A1:M1')
+#     charts_sheet['A1'] = f" {month} - Financial Analytics Dashboard"
+#     charts_sheet['A1'].font = Font(size=20, bold=True, color='FFFFFF')
+#     charts_sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='8b5cf6', fill_type="solid")
+#     charts_sheet['A1'].alignment = Alignment(horizontal="center", vertical="center")
+#     charts_sheet.row_dimensions[1].height = 40
+# 
+#     # Add subtitle
+#     charts_sheet.merge_cells('A2:M2')
+#     charts_sheet['A2'] = "Comprehensive visual analysis of your financial performance"
+#     charts_sheet['A2'].font = Font(size=12, color='8b5cf6', italic=True)
+#     charts_sheet['A2'].alignment = Alignment(horizontal="center")
+#     charts_sheet.row_dimensions[2].height = 25
+# 
+#     # Add decorative separator
+#     charts_sheet.merge_cells('A3:M3')
+#     charts_sheet['A3'] = "─" * 60
+#     charts_sheet['A3'].font = Font(size=8, color='e0e0e0')
+#     charts_sheet['A3'].alignment = Alignment(horizontal="center")
+#     charts_sheet.row_dimensions[3].height = 10
+# 
+#     # Sample data for demonstration
+#     weekly_income = [2500, 2800, 2400, 2600]
+#     weekly_expenses = [1800, 2000, 1700, 1900]
+#     weekly_savings = [700, 800, 700, 700]
+#     weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+# 
+#     # 1. Enhanced Key Metrics Cards (Top Section)
+#     current_row = 4
+#     monthly_income = sum(weekly_income)
+#     monthly_expenses = sum(weekly_expenses)
+#     monthly_savings = sum(weekly_savings)
+# 
+#     # Create professional metric cards
+#     metrics = [
+#         (" Total Income", f"£{monthly_income:,.0f}", "4CAF50", "A"),
+#         (" Total Expenses", f"£{monthly_expenses:,.0f}", "F44336", "D"),
+#         (" Net Savings", f"£{monthly_savings:,.0f}", "2196F3", "G"),
+#         (" Savings Rate", f"{(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%", "9C27B0", "J"),
+#         (" Avg Daily", f"£{monthly_income/30:,.0f}", "FF9800", "M")
+#     ]
+# 
+#     for title, value, color, col in metrics:
+#         # Card background with gradient effect
+#         for row in range(current_row, current_row + 3):
+#             for c in range(ord(col) - ord('A'), ord(col) - ord('A') + 1):
+#                 cell = charts_sheet.cell(row=row, column=c + 1)
+#                 cell.fill = PatternFill(start_color=f"{color}05", end_color=f"{color}10", fill_type="solid")
+#                 cell.border = Border(
+#                     left=Side(style='thin', color=f"{color}30"),
+#                     right=Side(style='thin', color=f"{color}30"),
+#                     top=Side(style='thin', color=f"{color}30"),
+#                     bottom=Side(style='thin', color=f"{color}30")
+#                 )
+#         
+#         # Title
+#         charts_sheet[f'{col}{current_row}'] = title
+#         charts_sheet[f'{col}{current_row}'].font = Font(size=9, bold=True, color=color)
+#         charts_sheet[f'{col}{current_row}'].alignment = Alignment(horizontal="center")
+#         
+#         # Value
+#         charts_sheet[f'{col}{current_row + 1}'] = value
+#         charts_sheet[f'{col}{current_row + 1}'].font = Font(size=16, bold=True, color=color)
+#         charts_sheet[f'{col}{current_row + 1}'].alignment = Alignment(horizontal="center")
+# 
+#     current_row += 5
+# 
+#     # 2. Enhanced Weekly Trend Chart (Left Side)
+#     charts_sheet[f'A{current_row}'] = " Weekly Financial Performance"
+#     charts_sheet[f'A{current_row}'].font = Font(bold=True, size=14, color='6f42c1')
+#     current_row += 1
+# 
+#     # Write weekly data for line chart
+#     for i, week in enumerate(weeks):
+#         charts_sheet.cell(row=current_row + i, column=1, value=week)
+#         charts_sheet.cell(row=current_row + i, column=2, value=weekly_income[i])
+#         charts_sheet.cell(row=current_row + i, column=3, value=weekly_expenses[i])
+#         charts_sheet.cell(row=current_row + i, column=4, value=weekly_savings[i])
+# 
+#     # Create enhanced line chart
+#     line_chart = LineChart()
+#     line_chart.title = "Weekly Income vs Expenses vs Savings"
+#     line_chart.style = 13
+#     line_chart.y_axis.title = 'Amount (£)'
+#     line_chart.x_axis.title = 'Week'
+#     line_chart.height = 10
+#     line_chart.width = 15
+# 
+#     data = Reference(charts_sheet, min_col=2, min_row=current_row, max_row=current_row + 3, max_col=4)
+#     line_chart.add_data(data, titles_from_data=True)
+#     line_chart.set_categories(Reference(charts_sheet, min_col=1, min_row=current_row + 1, max_row=current_row + 3))
+# 
+#     # Enhanced styling for line chart
+#     colors = ['4CAF50', 'F44336', '2196F3']
+#     line_widths = [25000, 25000, 25000]
+#     for i, series in enumerate(line_chart.series):
+#         series.graphicalProperties.line.width = line_widths[i]
+#         series.graphicalProperties.line.solidFill = colors[i]
+#         series.smooth = True  # Make lines smooth
+# 
+#     charts_sheet.add_chart(line_chart, f'F{current_row + 5}')
+# 
+#     # 3. Enhanced Expense Breakdown (Right Side)
+#     pie_start_row = current_row
+#     charts_sheet[f'K{pie_start_row}'] = " Expense Distribution"
+#     charts_sheet[f'K{pie_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
+# 
+#     # Write expense data with better categories
+#     expense_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
+#     expense_amounts = [1200, 800, 400, 300, 300, 200]
+# 
+#     for i, (cat, amt) in enumerate(zip(expense_categories, expense_amounts)):
+#         charts_sheet.cell(row=pie_start_row + 1 + i, column=11, value=cat)
+#         charts_sheet.cell(row=pie_start_row + 1 + i, column=12, value=amt)
+# 
+#     # Create enhanced pie chart
+#     pie = PieChart()
+#     labels = Reference(charts_sheet, min_col=11, min_row=pie_start_row + 1, max_row=pie_start_row + 6)
+#     data = Reference(charts_sheet, min_col=12, min_row=pie_start_row, max_row=pie_start_row + 6)
+#     pie.add_data(data, titles_from_data=True)
+#     pie.set_categories(labels)
+#     pie.title = "Monthly Expense Breakdown"
+#     pie.height = 10
+#     pie.width = 10
+#     pie.legend.position = 'r'
+#     pie.dataLabels = openpyxl.chart.label.DataLabelList()
+#     pie.dataLabels.showPercent = True
+#     pie.dataLabels.showVal = True
+# 
+#     # Enhanced colors for pie chart
+#     colors = ['4CAF50', '8BC34A', 'FFC107', 'FF9800', 'F44336', '9C27B0']
+#     for i, point in enumerate(pie.series[0].dPt):
+#         point.graphicalProperties.solidFill = colors[i % len(colors)]
+#         point.graphicalProperties.line.solidFill = "FFFFFF"
+#         point.graphicalProperties.line.width = 10000
+# 
+#     charts_sheet.add_chart(pie, f'O{pie_start_row + 8}')
+# 
+#     # 4. Budget vs Actual Comparison (Bottom Section)
+#     budget_start_row = current_row + 20
+#     charts_sheet.merge_cells(f'A{budget_start_row}:M{budget_start_row}')
+#     charts_sheet[f'A{budget_start_row}'] = " Budget vs Actual Analysis"
+#     charts_sheet[f'A{budget_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
+#     charts_sheet[f'A{budget_start_row}'].alignment = Alignment(horizontal="center")
+#     budget_start_row += 2
+# 
+#     # Enhanced budget data
+#     budget_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
+#     budget_planned = [1100, 750, 450, 350, 250, 200]
+#     budget_actual = [1200, 800, 400, 300, 300, 200]
+# 
+#     # Headers
+#     headers = ["Category", "Budget", "Actual", "Variance", "% Used", "Status"]
+#     for col, header in enumerate(headers, 1):
+#         cell = charts_sheet.cell(row=budget_start_row, column=col, value=header)
+#         cell.font = Font(bold=True, size=11, color='FFFFFF')
+#         cell.fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
+#         cell.alignment = Alignment(horizontal="center", vertical="center")
+#         cell.border = Border(
+#             left=Side(style='thin'), 
+#             right=Side(style='thin'), 
+#             top=Side(style='thin'), 
+#             bottom=Side(style='thin')
+#         )
+# 
+#     # Budget data with enhanced formatting
+#     for i, (cat, planned, actual) in enumerate(zip(budget_categories, budget_planned, budget_actual)):
+#         row = budget_start_row + i + 1
+#         variance = actual - planned
+#         percent_used = (actual / planned * 100) if planned > 0 else 0
+#         status = " On Track" if actual <= planned else " Over Budget"
+#         
+#         charts_sheet.cell(row=row, column=1, value=cat)
+#         charts_sheet.cell(row=row, column=2, value=planned).number_format = '£#,##0'
+#         charts_sheet.cell(row=row, column=3, value=actual).number_format = '£#,##0'
+#         charts_sheet.cell(row=row, column=4, value=variance).number_format = '£#,##0'
+#         charts_sheet.cell(row=row, column=5, value=percent_used).number_format = '0.0%'
+#         charts_sheet.cell(row=row, column=6, value=status)
+#         
+#         # Color code variance
+#         variance_cell = charts_sheet.cell(row=row, column=4)
+#         if variance <= 0:
+#             variance_cell.font = Font(color='4CAF50')
+#         else:
+#             variance_cell.font = Font(color='F44336')
+# 
+#             charts_sheet = wb.create_sheet('Charts')
+#         
+#         charts_sheet.sheet_view.showGridLines = False
+#         
+#         # Clear the sheet first
+#         charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
+#         for col in charts_sheet.columns:
+#             for cell in col:
+#                 cell.value = None
+# 
+#         # Enhanced title with gradient effect
+#         charts_sheet.merge_cells('A1:M1')
+#         charts_sheet['A1'] = f" {month} - Financial Analytics Dashboard"
+#         charts_sheet['A1'].font = Font(size=20, bold=True, color='FFFFFF')
+#         charts_sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='8b5cf6', fill_type="solid")
+#         charts_sheet['A1'].alignment = Alignment(horizontal="center", vertical="center")
+#         charts_sheet.row_dimensions[1].height = 40
+# 
+#         # Add subtitle
+#         charts_sheet.merge_cells('A2:M2')
+#         charts_sheet['A2'] = "Comprehensive visual analysis of your financial performance"
+#         charts_sheet['A2'].font = Font(size=12, color='8b5cf6', italic=True)
+#         charts_sheet['A2'].alignment = Alignment(horizontal="center")
+#         charts_sheet.row_dimensions[2].height = 25
+# 
+#         # Add decorative separator
+#         charts_sheet.merge_cells('A3:M3')
+#         charts_sheet['A3'] = "─" * 60
+#         charts_sheet['A3'].font = Font(size=8, color='e0e0e0')
+#         charts_sheet['A3'].alignment = Alignment(horizontal="center")
+#         charts_sheet.row_dimensions[3].height = 10
+# 
+#         # Sample data for demonstration
+#         weekly_income = [2500, 2800, 2400, 2600]
+#         weekly_expenses = [1800, 2000, 1700, 1900]
+#         weekly_savings = [700, 800, 700, 700]
+#         weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+# 
+#         # 1. Enhanced Key Metrics Cards (Top Section)
+#         current_row = 4
+#         monthly_income = sum(weekly_income)
+#         monthly_expenses = sum(weekly_expenses)
+#         monthly_savings = sum(weekly_savings)
+# 
+#         # Create professional metric cards
+#         metrics = [
+#             (" Total Income", f"£{monthly_income:,.0f}", "4CAF50", "A"),
+#             (" Total Expenses", f"£{monthly_expenses:,.0f}", "F44336", "D"),
+#             (" Net Savings", f"£{monthly_savings:,.0f}", "2196F3", "G"),
+#             (" Savings Rate", f"{(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%", "9C27B0", "J"),
+#             (" Avg Daily", f"£{monthly_income/30:,.0f}", "FF9800", "M")
+#         ]
+# 
+#         for title, value, color, col in metrics:
+#             # Card background with gradient effect
+#             for row in range(current_row, current_row + 3):
+#                 for c in range(ord(col) - ord('A'), ord(col) - ord('A') + 1):
+#                     cell = charts_sheet.cell(row=row, column=c + 1)
+#                     cell.fill = PatternFill(start_color=f"{color}05", end_color=f"{color}10", fill_type="solid")
+#                     cell.border = Border(
+#                         left=Side(style='thin', color=f"{color}30"),
+#                         right=Side(style='thin', color=f"{color}30"),
+#                         top=Side(style='thin', color=f"{color}30"),
+#                         bottom=Side(style='thin', color=f"{color}30")
+#                     )
+#             
+#             # Title
+#             charts_sheet[f'{col}{current_row}'] = title
+#             charts_sheet[f'{col}{current_row}'].font = Font(size=9, bold=True, color=color)
+#             charts_sheet[f'{col}{current_row}'].alignment = Alignment(horizontal="center")
+#             
+#             # Value
+#             charts_sheet[f'{col}{current_row + 1}'] = value
+#             charts_sheet[f'{col}{current_row + 1}'].font = Font(size=16, bold=True, color=color)
+#             charts_sheet[f'{col}{current_row + 1}'].alignment = Alignment(horizontal="center")
+# 
+#         current_row += 5
+# 
+#         # 2. Enhanced Weekly Trend Chart (Left Side)
+#         charts_sheet[f'A{current_row}'] = " Weekly Financial Performance"
+#         charts_sheet[f'A{current_row}'].font = Font(bold=True, size=14, color='6f42c1')
+#         current_row += 1
+# 
+#         # Write weekly data for line chart
+#         for i, week in enumerate(weeks):
+#             charts_sheet.cell(row=current_row + i, column=1, value=week)
+#             charts_sheet.cell(row=current_row + i, column=2, value=weekly_income[i])
+#             charts_sheet.cell(row=current_row + i, column=3, value=weekly_expenses[i])
+#             charts_sheet.cell(row=current_row + i, column=4, value=weekly_savings[i])
+# 
+#         # Create enhanced line chart
+#         line_chart = LineChart()
+#         line_chart.title = "Weekly Income vs Expenses vs Savings"
+#         line_chart.style = 13
+#         line_chart.y_axis.title = 'Amount (£)'
+#         line_chart.x_axis.title = 'Week'
+#         line_chart.height = 10
+#         line_chart.width = 15
+# 
+#         data = Reference(charts_sheet, min_col=2, min_row=current_row, max_row=current_row + 3, max_col=4)
+#         line_chart.add_data(data, titles_from_data=True)
+#         line_chart.set_categories(Reference(charts_sheet, min_col=1, min_row=current_row + 1, max_row=current_row + 3))
+# 
+#         # Enhanced styling for line chart
+#         colors = ['4CAF50', 'F44336', '2196F3']
+#         line_widths = [25000, 25000, 25000]
+#         for i, series in enumerate(line_chart.series):
+#             series.graphicalProperties.line.width = line_widths[i]
+#             series.graphicalProperties.line.solidFill = colors[i]
+#             series.smooth = True  # Make lines smooth
+# 
+#         charts_sheet.add_chart(line_chart, f'F{current_row + 5}')
+# 
+#         # 3. Enhanced Expense Breakdown (Right Side)
+#         pie_start_row = current_row
+#         charts_sheet[f'K{pie_start_row}'] = " Expense Distribution"
+#         charts_sheet[f'K{pie_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
+# 
+#         # Write expense data with better categories
+#         expense_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
+#         expense_amounts = [1200, 800, 400, 300, 300, 200]
+# 
+#         for i, (cat, amt) in enumerate(zip(expense_categories, expense_amounts)):
+#             charts_sheet.cell(row=pie_start_row + 1 + i, column=11, value=cat)
+#             charts_sheet.cell(row=pie_start_row + 1 + i, column=12, value=amt)
+# 
+#         # Create enhanced pie chart
+#         pie = PieChart()
+#         labels = Reference(charts_sheet, min_col=11, min_row=pie_start_row + 1, max_row=pie_start_row + 6)
+#         data = Reference(charts_sheet, min_col=12, min_row=pie_start_row, max_row=pie_start_row + 6)
+#         pie.add_data(data, titles_from_data=True)
+#         pie.set_categories(labels)
+#         pie.title = "Monthly Expense Breakdown"
+#         pie.height = 10
+#         pie.width = 10
+#         pie.legend.position = 'r'
+#         pie.dataLabels = openpyxl.chart.label.DataLabelList()
+#         pie.dataLabels.showPercent = True
+#         pie.dataLabels.showVal = True
+# 
+#         # Enhanced colors for pie chart
+#         colors = ['4CAF50', '8BC34A', 'FFC107', 'FF9800', 'F44336', '9C27B0']
+#         for i, point in enumerate(pie.series[0].dPt):
+#             point.graphicalProperties.solidFill = colors[i % len(colors)]
+#             point.graphicalProperties.line.solidFill = "FFFFFF"
+#             point.graphicalProperties.line.width = 10000
+# 
+#         charts_sheet.add_chart(pie, f'O{pie_start_row + 8}')
+# 
+#         # 4. Budget vs Actual Comparison (Bottom Section)
+#         budget_start_row = current_row + 20
+#         charts_sheet.merge_cells(f'A{budget_start_row}:M{budget_start_row}')
+#         charts_sheet[f'A{budget_start_row}'] = " Budget vs Actual Analysis"
+#         charts_sheet[f'A{budget_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
+#         charts_sheet[f'A{budget_start_row}'].alignment = Alignment(horizontal="center")
+#         budget_start_row += 2
+# 
+#         # Enhanced budget data
+#         budget_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
+#         budget_planned = [1100, 750, 450, 350, 250, 200]
+#         budget_actual = [1200, 800, 400, 300, 300, 200]
+# 
+#         # Headers
+#         headers = ["Category", "Budget", "Actual", "Variance", "% Used", "Status"]
+#         for col, header in enumerate(headers, 1):
+#             cell = charts_sheet.cell(row=budget_start_row, column=col, value=header)
+#             cell.font = Font(bold=True, size=11, color='FFFFFF')
+#             cell.fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
+#             cell.alignment = Alignment(horizontal="center", vertical="center")
+#             cell.border = Border(
+#                 left=Side(style='thin'), 
+#                 right=Side(style='thin'), 
+#                 top=Side(style='thin'), 
+#                 bottom=Side(style='thin')
+#             )
+# 
+#         # Budget data with enhanced formatting
+#         for i, (cat, planned, actual) in enumerate(zip(budget_categories, budget_planned, budget_actual)):
+#             row = budget_start_row + i + 1
+#             variance = actual - planned
+#             percent_used = (actual / planned * 100) if planned > 0 else 0
+#             status = " On Track" if actual <= planned else " Over Budget"
+#             
+#             charts_sheet.cell(row=row, column=1, value=cat)
+#             charts_sheet.cell(row=row, column=2, value=planned).number_format = '£#,##0'
+#             charts_sheet.cell(row=row, column=3, value=actual).number_format = '£#,##0'
+#             charts_sheet.cell(row=row, column=4, value=variance).number_format = '£#,##0'
+#             charts_sheet.cell(row=row, column=5, value=percent_used).number_format = '0.0%'
+#             charts_sheet.cell(row=row, column=6, value=status)
+#             
+#             # Color code variance
+#             variance_cell = charts_sheet.cell(row=row, column=4)
+#             if variance <= 0:
+#                 variance_cell.font = Font(color='4CAF50')
+#             else:
+#                 variance_cell.font = Font(color='F44336')
+# 
+#             charts_sheet = wb.create_sheet('Charts')
+#         
+#         charts_sheet.sheet_view.showGridLines = False
+#         
+#         # Clear the sheet first
+#         charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
+#         for col in charts_sheet.columns:
+#             for cell in col:
+#                 cell.value = None
 
         # Enhanced title with gradient effect
         charts_sheet.merge_cells('A1:M1')
@@ -660,6 +1052,7 @@ def create_enhanced_charts(wb, month):
             point.graphicalProperties.solidFill = colors[i % len(colors)]
 
         charts_sheet.add_chart(pie_chart_3d, f'H{budget_start_row + 10}')
+
 
         # 6. Add Financial Insights Section
         insights_start_row = budget_start_row + 25
@@ -1095,6 +1488,11 @@ def create_excel_template(month=None, sections=None):
                 ["Tuesday", "Smoothie", "Sandwich", "Pasta", "Nuts", "Bread, pasta, nuts"]
             ]
         },
+        "Debt Tracker": {
+            "headers": ["Person/Company", "Type", "Amount Owed", "Amount Owe Me", "Due Date", "Status", "Priority", "Notes"],
+            "color": "FF6B6B",  # Red
+            "sample_data": []
+        },
         "Time Table": {
             "headers": ["Time", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
             "color": "98FF98",  # Mint
@@ -1168,73 +1566,7 @@ def create_excel_template(month=None, sections=None):
     create_dashboard(dashboard, month)
     sheet_order.append('Dashboard')
     
-    # Create selected sheets
-    for section in sections:
-        if section in section_mapping:
-            tab_name = section_mapping[section]
-            if tab_name in all_tabs:
-                tab_data = all_tabs[tab_name]
-                sheet = wb.create_sheet(tab_name)
-                sheet_order.append(tab_name)
-                
-                # Create header with emoji and styling
-                create_header(sheet, f"📋 {tab_name}", tab_data.get("color", "6f42c1"))
-                
-                # Add column headers
-                headers = tab_data["headers"]
-                for col_num, header in enumerate(headers, start=1):
-                    cell = sheet.cell(row=3, column=col_num, value=header)
-                    cell.font = Font(bold=True, color='FFFFFF')
-                    cell.fill = PatternFill(
-                        start_color=tab_data.get("color", "6f42c1"), 
-                        end_color=tab_data.get("color", "6f42c1"), 
-                        fill_type='solid'
-                    )
-                    cell.border = Border(
-                        left=Side(style='thin'), 
-                        right=Side(style='thin'), 
-                        top=Side(style='thin'), 
-                        bottom=Side(style='thin')
-                    )
-                
-                # Add sample data if available
-                if "sample_data" in tab_data and tab_data["sample_data"]:
-                    data = tab_data["sample_data"]
-                    for row_num, row_data in enumerate(data, start=4):
-                        for col_num, cell_value in enumerate(row_data, start=1):
-                            cell = sheet.cell(row=row_num, column=col_num, value=cell_value)
-                            if isinstance(cell_value, (int, float)) and not isinstance(cell_value, bool):
-                                cell.number_format = '0.00'  # Removed currency symbol
-                
-                # Add total row if there are numeric columns
-                if data and len(data[0]) > 1:  # Only if there are columns to sum
-                    total_row = len(data) + 4
-                    sheet.cell(row=total_row, column=1, value="Total").font = Font(bold=True)
-                    
-                    # Calculate and add totals for numeric columns
-                    for col in range(2, len(headers) + 1):
-                        if any(isinstance(sheet.cell(row=r, column=col).value, (int, float)) 
-                              for r in range(4, total_row)):
-                            # Calculate sum of the column
-                            total = sum(sheet.cell(row=r, column=col).value or 0 
-                                      for r in range(4, total_row) 
-                                      if isinstance(sheet.cell(row=r, column=col).value, (int, float)))
-                            cell = sheet.cell(row=total_row, column=col, value=total)
-                            cell.font = Font(bold=True)
-                            cell.number_format = '0.00'  # Format total without currency
-                
-                # Auto-size columns for the current sheet
-                for column in sheet.columns:
-                    max_length = 0
-                    column_letter = get_column_letter(column[0].column)
-                    for cell in column:
-                        try:
-                            if cell.value and not isinstance(cell, openpyxl.cell.cell.MergedCell):
-                                max_length = max(max_length, len(str(cell.value)))
-                        except:
-                            pass
-                    adjusted_width = (max_length + 2) * 1.2
-                    sheet.column_dimensions[column_letter].width = min(adjusted_width, 30)
+    create_excel_template_simple(month=month, sections=sections)
     
     welcome_text = [
         "Thank you for choosing the Life & Budget Dashboard! This comprehensive tool will help you manage:",
@@ -2079,6 +2411,7 @@ Analyze the following financial and personal data to provide comprehensive insig
 - Income and expense tracking
 - Savings and investment information
 - Health and lifestyle metrics
+- Debt tracking and obligations
 
 ## Analysis Instructions
 For each relevant data section, provide:
@@ -2099,22 +2432,30 @@ For each relevant data section, provide:
 - Compare fixed vs. variable expenses
 - Evaluate emergency fund status (if data available)
 
-### 2. Spending Analysis
+### 2. Debt Analysis (if debt data available)
+- Analyze total debt burden and net debt position
+- Identify high-priority debts that need immediate attention
+- Suggest debt repayment strategies (avalanche vs snowball method)
+- Highlight any overdue or upcoming due dates
+- Analyze debt-to-income ratio implications
+
+### 3. Spending Analysis
 - Identify any unusual or outlier transactions
 - Highlight any recurring subscriptions or expenses that could be reduced
 - Compare spending against common budgeting guidelines (e.g., 50/30/20 rule)
 
-### 3. Income & Budget Optimization
+### 4. Income & Budget Optimization
 - Analyze income stability and sources
 - Suggest potential areas for expense reduction
-- Recommend budget allocation improvements
+- Recommend budget allocation improvements considering debt obligations
 
-### 4. Savings & Investments
+### 5. Savings & Investments
 - Evaluate current savings rate
 - Assess investment diversification (if data available)
 - Suggest potential savings goals based on income/expense patterns
+- Recommend how to balance debt repayment with savings goals
 
-### 5. Lifestyle & Health (if data available)
+### 6. Lifestyle & Health (if data available)
 - Analyze any health metrics for trends
 - Correlate lifestyle choices with financial patterns
 - Suggest holistic improvements that benefit both health and finances
@@ -2810,7 +3151,8 @@ def main():
             expenses = st.checkbox("Expenses", value=True, key="expenses_cb")
             monthly_purchases = st.checkbox("Monthly Purchases", value=True, key="monthly_purchases_cb")
             savings = st.checkbox("Savings", value=True, key="savings_cb")
-            stocks = st.checkbox("Stocks", value=True, key="stocks_cb")
+            stocks = st.checkbox("📊 Stock Tracker", value=True, key="stocks_cb")
+            debt = st.checkbox("💳 Debt Tracker", value=True, key="debt_cb")
         
         with col2:
             st.markdown("**Health**")
@@ -2831,6 +3173,7 @@ def main():
         if expenses: selected_sections.append("expenses")
         if savings: selected_sections.append("savings")
         if stocks: selected_sections.append("stocks")
+        if debt: selected_sections.append("debt")
         if weight: selected_sections.append("weight")
         if habits: selected_sections.append("habits")
         if cleaning: selected_sections.append("cleaning")
@@ -2842,9 +3185,8 @@ def main():
         # If no sections are selected, include all
         if not selected_sections:
             selected_sections = [
-                'income', 'expenses', 'savings', 'stocks',
-                'weight', 'habits', 'cleaning', 'meals', 'timetable',
-                'monthly_purchases'
+                'income', 'expenses', 'monthly_purchases', 'savings', 'stocks', 
+                'debt', 'weight', 'habits', 'cleaning', 'meals', 'timetable'
             ]
 
         if st.button("🔍 Generate Preview"):
@@ -3020,6 +3362,7 @@ def main():
             'Expenses',
             'Savings',
             'Investments',
+            'Debt',
             'Health',
             'Lifestyle'
         ]

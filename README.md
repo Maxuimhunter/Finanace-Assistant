@@ -14,6 +14,7 @@ It's designed to help you:
 - **Expense Tracking** 💸: Categorize and monitor where your money's going (spoiler: it's probably food 🍕)
 - **Budget vs Actual** 📈: Compare what you planned to spend vs what you actually spent (oops 😅)
 - **Subscription Manager** 📱: Keep track of all those monthly subscriptions that keep adding up
+- **Debt Management** 💳: Track who you owe, who owes you, upcoming bills, and net debt position
 - **Multi-format Export** 📤: Export to Excel, PDF, or whatever format you prefer
 
 ### Making Things Look Pretty 🎨
@@ -27,6 +28,7 @@ It's designed to help you:
 - **Meal Planning** 🍳: Organize weekly meal schedules and grocery lists
 - **Cleaning Schedule** 🧹: Track household maintenance tasks (because adulting is hard)
 - **Goal Setting** 🎯: Set and monitor personal and financial objectives
+- **Debt Tracking** 💳: Manage who you owe and who owes you, with visual pie charts
 
 ## 🛠️ Tech Stack (The Nerdy Stuff)
 ### Main Technologies 💻
