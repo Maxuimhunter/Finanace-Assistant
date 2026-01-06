@@ -1,34 +1,19 @@
 # app.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Border, Side, Alignment, NamedStyle
-from openpyxl.chart import LineChart, PieChart, BarChart, Reference
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.chart import BarChart, LineChart, PieChart, Reference, PieChart3D
+from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
-import datetime
-import io
-import re
 import tempfile
-from PIL import Image
-import matplotlib.pyplot as plt
-import seaborn as sns
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 import os
-import re
+import datetime
 import json
-from io import BytesIO, StringIO
-import subprocess
-import sys
-from PIL import Image
-import plotly.graph_objects as go
-import plotly.express as px
+import ollama
+import time
+from io import BytesIO
 from fpdf import FPDF
 import base64
 import io
@@ -234,623 +219,40 @@ def is_merged_cell(sheet, row, col):
             return True
     return False
 
-def create_pdf_report(month=None, sections=None):
-    """Create a professional PDF report with charts and financial analysis."""
+def create_enhanced_charts(wb, month):
+    """Create clean and organized charts for the Excel workbook."""
     try:
-        # Set up matplotlib for better charts
-        plt.style.use('default')
-        
-        # Create PDF buffer
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
-        
-        # Get styles
-        styles = getSampleStyleSheet()
-        
-        # Custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30,
-            textColor=colors.HexColor('#6f42c1'),
-            alignment=TA_CENTER
-        )
-        
-        subtitle_style = ParagraphStyle(
-            'CustomSubtitle',
-            parent=styles['Heading2'],
-            fontSize=14,
-            spaceAfter=20,
-            textColor=colors.HexColor('#8b5cf6'),
-            alignment=TA_CENTER,
-            fontStyle='Italic'
-        )
-        
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=16,
-            spaceAfter=12,
-            textColor=colors.HexColor('#6f42c1')
-        )
-        
-        # Content
-        story = []
-        
-        # Title
-        if month is None:
-            current_month = datetime.date.today().strftime('%B %Y')
+        # Create or get the Charts sheet
+        if 'Charts' in wb.sheetnames:
+            charts_sheet = wb['Charts']
         else:
-            current_month = f"{month} {datetime.date.today().year}"
+            charts_sheet = wb.create_sheet('Charts')
         
-        story.append(Paragraph(f"📊 Financial Report - {current_month}", title_style))
-        story.append(Paragraph("Comprehensive financial analysis and insights", subtitle_style))
-        story.append(Spacer(1, 20))
-        
-        # Sample data for demonstration
-        weekly_income = [2500, 2800, 2400, 2600]
-        weekly_expenses = [1800, 2000, 1700, 1900]
-        weekly_savings = [700, 800, 700, 700]
-        weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-        
-        # 1. Key Metrics Section
-        story.append(Paragraph("💰 Key Financial Metrics", heading_style))
-        
-        metrics_data = [
-            ['Metric', 'Amount', 'Status'],
-            ['Total Income', f'£{sum(weekly_income):,.0f}', '📈'],
-            ['Total Expenses', f'£{sum(weekly_expenses):,.0f}', '💸'],
-            ['Net Savings', f'£{sum(weekly_savings):,.0f}', '💰'],
-            ['Savings Rate', f'{(sum(weekly_savings)/sum(weekly_income)*100):.1f}%', '🎯']
-        ]
-        
-        metrics_table = Table(metrics_data, colWidths=[2.5*inch, 2*inch, 1*inch])
-        metrics_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6f42c1')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0'))
-        ]))
-        
-        story.append(metrics_table)
-        story.append(Spacer(1, 20))
-        
-        # 2. Financial Summary Table (instead of charts to avoid image issues)
-        story.append(Paragraph("📈 Weekly Financial Performance", heading_style))
-        
-        weekly_data = [['Week', 'Income', 'Expenses', 'Savings']]
-        for i, week in enumerate(weeks):
-            weekly_data.append([week, f'£{weekly_income[i]:,.0f}', f'£{weekly_expenses[i]:,.0f}', f'£{weekly_savings[i]:,.0f}'])
-        
-        weekly_table = Table(weekly_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.5*inch])
-        weekly_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6f42c1')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0'))
-        ]))
-        
-        story.append(weekly_table)
-        story.append(Spacer(1, 20))
-        
-        # 3. Budget Analysis Table
-        story.append(Paragraph("📊 Budget vs Actual Analysis", heading_style))
-        
-        budget_categories = ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Other']
-        budget_planned = [1100, 750, 450, 350, 250, 200]
-        budget_actual = [1200, 800, 400, 300, 300, 200]
-        
-        budget_data = [['Category', 'Budget', 'Actual', 'Variance', 'Status']]
-        for cat, planned, actual in zip(budget_categories, budget_planned, budget_actual):
-            variance = actual - planned
-            status = '✅ On Track' if actual <= planned else '⚠️ Over Budget'
-            budget_data.append([cat, f'£{planned:,}', f'£{actual:,}', f'£{variance:,}', status])
-        
-        budget_table = Table(budget_data, colWidths=[1.5*inch, 1.2*inch, 1.2*inch, 1.2*inch, 1.2*inch])
-        budget_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6f42c1')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e0e0e0'))
-        ]))
-        
-        story.append(budget_table)
-        story.append(Spacer(1, 20))
-        
-        # 4. Financial Insights
-        story.append(Paragraph("💡 Key Financial Insights", heading_style))
-        
-        monthly_income = sum(weekly_income)
-        monthly_expenses = sum(weekly_expenses)
-        monthly_savings = sum(weekly_savings)
-        savings_rate = (monthly_savings/monthly_income*100) if monthly_income > 0 else 0
-        
-        insights = [
-            f"• Your current savings rate is {savings_rate:.1f}%. Financial experts recommend saving at least 20% of your income.",
-            f"• Total monthly expenses of £{monthly_expenses:,.0f} represent {(monthly_expenses/monthly_income*100):.1f}% of your income.",
-            f"• Average weekly income is £{monthly_income/4:,.0f}. Consider ways to increase this through side hustles or career advancement.",
-            f"• Housing costs account for {(1200/monthly_expenses*100):.1f}% of your expenses - ensure this stays below 30% of income.",
-            f"• You have {len([x for x in budget_actual if x > budget_planned[budget_actual.index(x)]])} categories over budget. Review these areas for potential savings."
-        ]
-        
-        for insight in insights:
-            story.append(Paragraph(insight, styles['Normal']))
-            story.append(Spacer(1, 6))
-        
-        # 5. Recommendations
-        story.append(Paragraph("🎯 Personalized Recommendations", heading_style))
-        
-        recommendations = [
-            "📈 Increase Income: Explore freelance opportunities or ask for a raise",
-            "💰 Boost Savings: Set up automatic transfers to savings accounts",
-            "📊 Track Expenses: Use budgeting apps to monitor spending patterns",
-            "🎯 Set Goals: Establish specific financial targets for the next 6 months",
-            "🔄 Review Regularly: Update your budget monthly to reflect changes"
-        ]
-        
-        for rec in recommendations:
-            story.append(Paragraph(rec, styles['Normal']))
-            story.append(Spacer(1, 6))
-        
-        # Footer
-        story.append(Spacer(1, 30))
-        story.append(Paragraph(f"Generated on {datetime.date.today().strftime('%B %d, %Y')}", 
-                              ParagraphStyle('Footer', parent=styles['Normal'], 
-                                           fontSize=8, textColor=colors.grey, 
-                                           alignment=TA_CENTER)))
-        
-        # Build PDF
-        doc.build(story)
-        
-        # Get PDF bytes
-        print(f"Error creating PDF: {str(e)}")
-        return None
+        charts_sheet.sheet_view.showGridLines = False
 
-# Create enhanced charts
-# create_enhanced_charts(wb, month):
-# try:
-#     # Create or get the Charts sheet
-#     if 'Charts' in wb.sheetnames:
-#         charts_sheet = wb['Charts']
-#     else:
-#         charts_sheet = wb.create_sheet('Charts')
-# 
-#     charts_sheet.sheet_view.showGridLines = False
-# 
-#     # Clear the sheet first
-#     charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
-#     for col in charts_sheet.columns:
-#         for cell in col:
-#             cell.value = None
-# 
-#     # Enhanced title with gradient effect
-#     charts_sheet.merge_cells('A1:M1')
-#     charts_sheet['A1'] = f" {month} - Financial Analytics Dashboard"
-#     charts_sheet['A1'].font = Font(size=20, bold=True, color='FFFFFF')
-#     charts_sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='8b5cf6', fill_type="solid")
-#     charts_sheet['A1'].alignment = Alignment(horizontal="center", vertical="center")
-#     charts_sheet.row_dimensions[1].height = 40
-# 
-#     # Add subtitle
-#     charts_sheet.merge_cells('A2:M2')
-#     charts_sheet['A2'] = "Comprehensive visual analysis of your financial performance"
-#     charts_sheet['A2'].font = Font(size=12, color='8b5cf6', italic=True)
-#     charts_sheet['A2'].alignment = Alignment(horizontal="center")
-#     charts_sheet.row_dimensions[2].height = 25
-# 
-#     # Add decorative separator
-#     charts_sheet.merge_cells('A3:M3')
-#     charts_sheet['A3'] = "─" * 60
-#     charts_sheet['A3'].font = Font(size=8, color='e0e0e0')
-#     charts_sheet['A3'].alignment = Alignment(horizontal="center")
-#     charts_sheet.row_dimensions[3].height = 10
-# 
-#     # Sample data for demonstration
-#     weekly_income = [2500, 2800, 2400, 2600]
-#     weekly_expenses = [1800, 2000, 1700, 1900]
-#     weekly_savings = [700, 800, 700, 700]
-#     weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-# 
-#     # 1. Enhanced Key Metrics Cards (Top Section)
-#     current_row = 4
-#     monthly_income = sum(weekly_income)
-#     monthly_expenses = sum(weekly_expenses)
-#     monthly_savings = sum(weekly_savings)
-# 
-#     # Create professional metric cards
-#     metrics = [
-#         (" Total Income", f"£{monthly_income:,.0f}", "4CAF50", "A"),
-#         (" Total Expenses", f"£{monthly_expenses:,.0f}", "F44336", "D"),
-#         (" Net Savings", f"£{monthly_savings:,.0f}", "2196F3", "G"),
-#         (" Savings Rate", f"{(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%", "9C27B0", "J"),
-#         (" Avg Daily", f"£{monthly_income/30:,.0f}", "FF9800", "M")
-#     ]
-# 
-#     for title, value, color, col in metrics:
-#         # Card background with gradient effect
-#         for row in range(current_row, current_row + 3):
-#             for c in range(ord(col) - ord('A'), ord(col) - ord('A') + 1):
-#                 cell = charts_sheet.cell(row=row, column=c + 1)
-#                 cell.fill = PatternFill(start_color=f"{color}05", end_color=f"{color}10", fill_type="solid")
-#                 cell.border = Border(
-#                     left=Side(style='thin', color=f"{color}30"),
-#                     right=Side(style='thin', color=f"{color}30"),
-#                     top=Side(style='thin', color=f"{color}30"),
-#                     bottom=Side(style='thin', color=f"{color}30")
-#                 )
-#         
-#         # Title
-#         charts_sheet[f'{col}{current_row}'] = title
-#         charts_sheet[f'{col}{current_row}'].font = Font(size=9, bold=True, color=color)
-#         charts_sheet[f'{col}{current_row}'].alignment = Alignment(horizontal="center")
-#         
-#         # Value
-#         charts_sheet[f'{col}{current_row + 1}'] = value
-#         charts_sheet[f'{col}{current_row + 1}'].font = Font(size=16, bold=True, color=color)
-#         charts_sheet[f'{col}{current_row + 1}'].alignment = Alignment(horizontal="center")
-# 
-#     current_row += 5
-# 
-#     # 2. Enhanced Weekly Trend Chart (Left Side)
-#     charts_sheet[f'A{current_row}'] = " Weekly Financial Performance"
-#     charts_sheet[f'A{current_row}'].font = Font(bold=True, size=14, color='6f42c1')
-#     current_row += 1
-# 
-#     # Write weekly data for line chart
-#     for i, week in enumerate(weeks):
-#         charts_sheet.cell(row=current_row + i, column=1, value=week)
-#         charts_sheet.cell(row=current_row + i, column=2, value=weekly_income[i])
-#         charts_sheet.cell(row=current_row + i, column=3, value=weekly_expenses[i])
-#         charts_sheet.cell(row=current_row + i, column=4, value=weekly_savings[i])
-# 
-#     # Create enhanced line chart
-#     line_chart = LineChart()
-#     line_chart.title = "Weekly Income vs Expenses vs Savings"
-#     line_chart.style = 13
-#     line_chart.y_axis.title = 'Amount (£)'
-#     line_chart.x_axis.title = 'Week'
-#     line_chart.height = 10
-#     line_chart.width = 15
-# 
-#     data = Reference(charts_sheet, min_col=2, min_row=current_row, max_row=current_row + 3, max_col=4)
-#     line_chart.add_data(data, titles_from_data=True)
-#     line_chart.set_categories(Reference(charts_sheet, min_col=1, min_row=current_row + 1, max_row=current_row + 3))
-# 
-#     # Enhanced styling for line chart
-#     colors = ['4CAF50', 'F44336', '2196F3']
-#     line_widths = [25000, 25000, 25000]
-#     for i, series in enumerate(line_chart.series):
-#         series.graphicalProperties.line.width = line_widths[i]
-#         series.graphicalProperties.line.solidFill = colors[i]
-#         series.smooth = True  # Make lines smooth
-# 
-#     charts_sheet.add_chart(line_chart, f'F{current_row + 5}')
-# 
-#     # 3. Enhanced Expense Breakdown (Right Side)
-#     pie_start_row = current_row
-#     charts_sheet[f'K{pie_start_row}'] = " Expense Distribution"
-#     charts_sheet[f'K{pie_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
-# 
-#     # Write expense data with better categories
-#     expense_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
-#     expense_amounts = [1200, 800, 400, 300, 300, 200]
-# 
-#     for i, (cat, amt) in enumerate(zip(expense_categories, expense_amounts)):
-#         charts_sheet.cell(row=pie_start_row + 1 + i, column=11, value=cat)
-#         charts_sheet.cell(row=pie_start_row + 1 + i, column=12, value=amt)
-# 
-#     # Create enhanced pie chart
-#     pie = PieChart()
-#     labels = Reference(charts_sheet, min_col=11, min_row=pie_start_row + 1, max_row=pie_start_row + 6)
-#     data = Reference(charts_sheet, min_col=12, min_row=pie_start_row, max_row=pie_start_row + 6)
-#     pie.add_data(data, titles_from_data=True)
-#     pie.set_categories(labels)
-#     pie.title = "Monthly Expense Breakdown"
-#     pie.height = 10
-#     pie.width = 10
-#     pie.legend.position = 'r'
-#     pie.dataLabels = openpyxl.chart.label.DataLabelList()
-#     pie.dataLabels.showPercent = True
-#     pie.dataLabels.showVal = True
-# 
-#     # Enhanced colors for pie chart
-#     colors = ['4CAF50', '8BC34A', 'FFC107', 'FF9800', 'F44336', '9C27B0']
-#     for i, point in enumerate(pie.series[0].dPt):
-#         point.graphicalProperties.solidFill = colors[i % len(colors)]
-#         point.graphicalProperties.line.solidFill = "FFFFFF"
-#         point.graphicalProperties.line.width = 10000
-# 
-#     charts_sheet.add_chart(pie, f'O{pie_start_row + 8}')
-# 
-#     # 4. Budget vs Actual Comparison (Bottom Section)
-#     budget_start_row = current_row + 20
-#     charts_sheet.merge_cells(f'A{budget_start_row}:M{budget_start_row}')
-#     charts_sheet[f'A{budget_start_row}'] = " Budget vs Actual Analysis"
-#     charts_sheet[f'A{budget_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
-#     charts_sheet[f'A{budget_start_row}'].alignment = Alignment(horizontal="center")
-#     budget_start_row += 2
-# 
-#     # Enhanced budget data
-#     budget_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
-#     budget_planned = [1100, 750, 450, 350, 250, 200]
-#     budget_actual = [1200, 800, 400, 300, 300, 200]
-# 
-#     # Headers
-#     headers = ["Category", "Budget", "Actual", "Variance", "% Used", "Status"]
-#     for col, header in enumerate(headers, 1):
-#         cell = charts_sheet.cell(row=budget_start_row, column=col, value=header)
-#         cell.font = Font(bold=True, size=11, color='FFFFFF')
-#         cell.fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
-#         cell.alignment = Alignment(horizontal="center", vertical="center")
-#         cell.border = Border(
-#             left=Side(style='thin'), 
-#             right=Side(style='thin'), 
-#             top=Side(style='thin'), 
-#             bottom=Side(style='thin')
-#         )
-# 
-#     # Budget data with enhanced formatting
-#     for i, (cat, planned, actual) in enumerate(zip(budget_categories, budget_planned, budget_actual)):
-#         row = budget_start_row + i + 1
-#         variance = actual - planned
-#         percent_used = (actual / planned * 100) if planned > 0 else 0
-#         status = " On Track" if actual <= planned else " Over Budget"
-#         
-#         charts_sheet.cell(row=row, column=1, value=cat)
-#         charts_sheet.cell(row=row, column=2, value=planned).number_format = '£#,##0'
-#         charts_sheet.cell(row=row, column=3, value=actual).number_format = '£#,##0'
-#         charts_sheet.cell(row=row, column=4, value=variance).number_format = '£#,##0'
-#         charts_sheet.cell(row=row, column=5, value=percent_used).number_format = '0.0%'
-#         charts_sheet.cell(row=row, column=6, value=status)
-#         
-#         # Color code variance
-#         variance_cell = charts_sheet.cell(row=row, column=4)
-#         if variance <= 0:
-#             variance_cell.font = Font(color='4CAF50')
-#         else:
-#             variance_cell.font = Font(color='F44336')
-# 
-#             charts_sheet = wb.create_sheet('Charts')
-#         
-#         charts_sheet.sheet_view.showGridLines = False
-#         
-#         # Clear the sheet first
-#         charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
-#         for col in charts_sheet.columns:
-#             for cell in col:
-#                 cell.value = None
-# 
-#         # Enhanced title with gradient effect
-#         charts_sheet.merge_cells('A1:M1')
-#         charts_sheet['A1'] = f" {month} - Financial Analytics Dashboard"
-#         charts_sheet['A1'].font = Font(size=20, bold=True, color='FFFFFF')
-#         charts_sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='8b5cf6', fill_type="solid")
-#         charts_sheet['A1'].alignment = Alignment(horizontal="center", vertical="center")
-#         charts_sheet.row_dimensions[1].height = 40
-# 
-#         # Add subtitle
-#         charts_sheet.merge_cells('A2:M2')
-#         charts_sheet['A2'] = "Comprehensive visual analysis of your financial performance"
-#         charts_sheet['A2'].font = Font(size=12, color='8b5cf6', italic=True)
-#         charts_sheet['A2'].alignment = Alignment(horizontal="center")
-#         charts_sheet.row_dimensions[2].height = 25
-# 
-#         # Add decorative separator
-#         charts_sheet.merge_cells('A3:M3')
-#         charts_sheet['A3'] = "─" * 60
-#         charts_sheet['A3'].font = Font(size=8, color='e0e0e0')
-#         charts_sheet['A3'].alignment = Alignment(horizontal="center")
-#         charts_sheet.row_dimensions[3].height = 10
-# 
-#         # Sample data for demonstration
-#         weekly_income = [2500, 2800, 2400, 2600]
-#         weekly_expenses = [1800, 2000, 1700, 1900]
-#         weekly_savings = [700, 800, 700, 700]
-#         weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-# 
-#         # 1. Enhanced Key Metrics Cards (Top Section)
-#         current_row = 4
-#         monthly_income = sum(weekly_income)
-#         monthly_expenses = sum(weekly_expenses)
-#         monthly_savings = sum(weekly_savings)
-# 
-#         # Create professional metric cards
-#         metrics = [
-#             (" Total Income", f"£{monthly_income:,.0f}", "4CAF50", "A"),
-#             (" Total Expenses", f"£{monthly_expenses:,.0f}", "F44336", "D"),
-#             (" Net Savings", f"£{monthly_savings:,.0f}", "2196F3", "G"),
-#             (" Savings Rate", f"{(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%", "9C27B0", "J"),
-#             (" Avg Daily", f"£{monthly_income/30:,.0f}", "FF9800", "M")
-#         ]
-# 
-#         for title, value, color, col in metrics:
-#             # Card background with gradient effect
-#             for row in range(current_row, current_row + 3):
-#                 for c in range(ord(col) - ord('A'), ord(col) - ord('A') + 1):
-#                     cell = charts_sheet.cell(row=row, column=c + 1)
-#                     cell.fill = PatternFill(start_color=f"{color}05", end_color=f"{color}10", fill_type="solid")
-#                     cell.border = Border(
-#                         left=Side(style='thin', color=f"{color}30"),
-#                         right=Side(style='thin', color=f"{color}30"),
-#                         top=Side(style='thin', color=f"{color}30"),
-#                         bottom=Side(style='thin', color=f"{color}30")
-#                     )
-#             
-#             # Title
-#             charts_sheet[f'{col}{current_row}'] = title
-#             charts_sheet[f'{col}{current_row}'].font = Font(size=9, bold=True, color=color)
-#             charts_sheet[f'{col}{current_row}'].alignment = Alignment(horizontal="center")
-#             
-#             # Value
-#             charts_sheet[f'{col}{current_row + 1}'] = value
-#             charts_sheet[f'{col}{current_row + 1}'].font = Font(size=16, bold=True, color=color)
-#             charts_sheet[f'{col}{current_row + 1}'].alignment = Alignment(horizontal="center")
-# 
-#         current_row += 5
-# 
-#         # 2. Enhanced Weekly Trend Chart (Left Side)
-#         charts_sheet[f'A{current_row}'] = " Weekly Financial Performance"
-#         charts_sheet[f'A{current_row}'].font = Font(bold=True, size=14, color='6f42c1')
-#         current_row += 1
-# 
-#         # Write weekly data for line chart
-#         for i, week in enumerate(weeks):
-#             charts_sheet.cell(row=current_row + i, column=1, value=week)
-#             charts_sheet.cell(row=current_row + i, column=2, value=weekly_income[i])
-#             charts_sheet.cell(row=current_row + i, column=3, value=weekly_expenses[i])
-#             charts_sheet.cell(row=current_row + i, column=4, value=weekly_savings[i])
-# 
-#         # Create enhanced line chart
-#         line_chart = LineChart()
-#         line_chart.title = "Weekly Income vs Expenses vs Savings"
-#         line_chart.style = 13
-#         line_chart.y_axis.title = 'Amount (£)'
-#         line_chart.x_axis.title = 'Week'
-#         line_chart.height = 10
-#         line_chart.width = 15
-# 
-#         data = Reference(charts_sheet, min_col=2, min_row=current_row, max_row=current_row + 3, max_col=4)
-#         line_chart.add_data(data, titles_from_data=True)
-#         line_chart.set_categories(Reference(charts_sheet, min_col=1, min_row=current_row + 1, max_row=current_row + 3))
-# 
-#         # Enhanced styling for line chart
-#         colors = ['4CAF50', 'F44336', '2196F3']
-#         line_widths = [25000, 25000, 25000]
-#         for i, series in enumerate(line_chart.series):
-#             series.graphicalProperties.line.width = line_widths[i]
-#             series.graphicalProperties.line.solidFill = colors[i]
-#             series.smooth = True  # Make lines smooth
-# 
-#         charts_sheet.add_chart(line_chart, f'F{current_row + 5}')
-# 
-#         # 3. Enhanced Expense Breakdown (Right Side)
-#         pie_start_row = current_row
-#         charts_sheet[f'K{pie_start_row}'] = " Expense Distribution"
-#         charts_sheet[f'K{pie_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
-# 
-#         # Write expense data with better categories
-#         expense_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
-#         expense_amounts = [1200, 800, 400, 300, 300, 200]
-# 
-#         for i, (cat, amt) in enumerate(zip(expense_categories, expense_amounts)):
-#             charts_sheet.cell(row=pie_start_row + 1 + i, column=11, value=cat)
-#             charts_sheet.cell(row=pie_start_row + 1 + i, column=12, value=amt)
-# 
-#         # Create enhanced pie chart
-#         pie = PieChart()
-#         labels = Reference(charts_sheet, min_col=11, min_row=pie_start_row + 1, max_row=pie_start_row + 6)
-#         data = Reference(charts_sheet, min_col=12, min_row=pie_start_row, max_row=pie_start_row + 6)
-#         pie.add_data(data, titles_from_data=True)
-#         pie.set_categories(labels)
-#         pie.title = "Monthly Expense Breakdown"
-#         pie.height = 10
-#         pie.width = 10
-#         pie.legend.position = 'r'
-#         pie.dataLabels = openpyxl.chart.label.DataLabelList()
-#         pie.dataLabels.showPercent = True
-#         pie.dataLabels.showVal = True
-# 
-#         # Enhanced colors for pie chart
-#         colors = ['4CAF50', '8BC34A', 'FFC107', 'FF9800', 'F44336', '9C27B0']
-#         for i, point in enumerate(pie.series[0].dPt):
-#             point.graphicalProperties.solidFill = colors[i % len(colors)]
-#             point.graphicalProperties.line.solidFill = "FFFFFF"
-#             point.graphicalProperties.line.width = 10000
-# 
-#         charts_sheet.add_chart(pie, f'O{pie_start_row + 8}')
-# 
-#         # 4. Budget vs Actual Comparison (Bottom Section)
-#         budget_start_row = current_row + 20
-#         charts_sheet.merge_cells(f'A{budget_start_row}:M{budget_start_row}')
-#         charts_sheet[f'A{budget_start_row}'] = " Budget vs Actual Analysis"
-#         charts_sheet[f'A{budget_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
-#         charts_sheet[f'A{budget_start_row}'].alignment = Alignment(horizontal="center")
-#         budget_start_row += 2
-# 
-#         # Enhanced budget data
-#         budget_categories = [" Housing", " Food", " Transport", " Utilities", " Entertainment", " Other"]
-#         budget_planned = [1100, 750, 450, 350, 250, 200]
-#         budget_actual = [1200, 800, 400, 300, 300, 200]
-# 
-#         # Headers
-#         headers = ["Category", "Budget", "Actual", "Variance", "% Used", "Status"]
-#         for col, header in enumerate(headers, 1):
-#             cell = charts_sheet.cell(row=budget_start_row, column=col, value=header)
-#             cell.font = Font(bold=True, size=11, color='FFFFFF')
-#             cell.fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
-#             cell.alignment = Alignment(horizontal="center", vertical="center")
-#             cell.border = Border(
-#                 left=Side(style='thin'), 
-#                 right=Side(style='thin'), 
-#                 top=Side(style='thin'), 
-#                 bottom=Side(style='thin')
-#             )
-# 
-#         # Budget data with enhanced formatting
-#         for i, (cat, planned, actual) in enumerate(zip(budget_categories, budget_planned, budget_actual)):
-#             row = budget_start_row + i + 1
-#             variance = actual - planned
-#             percent_used = (actual / planned * 100) if planned > 0 else 0
-#             status = " On Track" if actual <= planned else " Over Budget"
-#             
-#             charts_sheet.cell(row=row, column=1, value=cat)
-#             charts_sheet.cell(row=row, column=2, value=planned).number_format = '£#,##0'
-#             charts_sheet.cell(row=row, column=3, value=actual).number_format = '£#,##0'
-#             charts_sheet.cell(row=row, column=4, value=variance).number_format = '£#,##0'
-#             charts_sheet.cell(row=row, column=5, value=percent_used).number_format = '0.0%'
-#             charts_sheet.cell(row=row, column=6, value=status)
-#             
-#             # Color code variance
-#             variance_cell = charts_sheet.cell(row=row, column=4)
-#             if variance <= 0:
-#                 variance_cell.font = Font(color='4CAF50')
-#             else:
-#                 variance_cell.font = Font(color='F44336')
-# 
-#             charts_sheet = wb.create_sheet('Charts')
-#         
-#         charts_sheet.sheet_view.showGridLines = False
-#         
-#         # Clear the sheet first
-#         charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
-#         for col in charts_sheet.columns:
-#             for cell in col:
-#                 cell.value = None
+        # Clear the sheet first
+        charts_sheet.delete_rows(1, charts_sheet.max_row or 100)
+        for col in charts_sheet.columns:
+            for cell in col:
+                cell.value = None
 
-        # Enhanced title with gradient effect
-        charts_sheet.merge_cells('A1:M1')
-        charts_sheet['A1'] = f"📊 {month} - Financial Analytics Dashboard"
-        charts_sheet['A1'].font = Font(size=20, bold=True, color='FFFFFF')
-        charts_sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='8b5cf6', fill_type="solid")
+        # Title and styling
+        charts_sheet.merge_cells('A1:H1')
+        charts_sheet['A1'] = f"📊 {month} - Financial Analytics"
+        charts_sheet['A1'].font = Font(size=18, bold=True, color='FFFFFF')
+        charts_sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
         charts_sheet['A1'].alignment = Alignment(horizontal="center", vertical="center")
-        charts_sheet.row_dimensions[1].height = 40
+        charts_sheet.row_dimensions[1].height = 35
 
         # Add subtitle
-        charts_sheet.merge_cells('A2:M2')
-        charts_sheet['A2'] = "Comprehensive visual analysis of your financial performance"
-        charts_sheet['A2'].font = Font(size=12, color='8b5cf6', italic=True)
+        charts_sheet.merge_cells('A2:H2')
+        charts_sheet['A2'] = "Visual overview of your financial data"
+        charts_sheet['A2'].font = Font(size=11, color='666666', italic=True)
         charts_sheet['A2'].alignment = Alignment(horizontal="center")
-        charts_sheet.row_dimensions[2].height = 25
+        charts_sheet.row_dimensions[2].height = 20
 
-        # Add decorative separator
-        charts_sheet.merge_cells('A3:M3')
-        charts_sheet['A3'] = "─" * 60
-        charts_sheet['A3'].font = Font(size=8, color='e0e0e0')
-        charts_sheet['A3'].alignment = Alignment(horizontal="center")
-        charts_sheet.row_dimensions[3].height = 10
+        # Add spacing
+        charts_sheet.row_dimensions[3].height = 15
 
         # Sample data for demonstration
         weekly_income = [2500, 2800, 2400, 2600]
@@ -858,49 +260,40 @@ def create_pdf_report(month=None, sections=None):
         weekly_savings = [700, 800, 700, 700]
         weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
 
-        # 1. Enhanced Key Metrics Cards (Top Section)
+        # 1. Key Metrics Cards (Top Section - Clean Layout)
         current_row = 4
         monthly_income = sum(weekly_income)
         monthly_expenses = sum(weekly_expenses)
         monthly_savings = sum(weekly_savings)
 
-        # Create professional metric cards
+        # Create clean metric cards
         metrics = [
-            ("💰 Total Income", f"£{monthly_income:,.0f}", "4CAF50", "A"),
-            ("💸 Total Expenses", f"£{monthly_expenses:,.0f}", "F44336", "D"),
-            ("📈 Net Savings", f"£{monthly_savings:,.0f}", "2196F3", "G"),
-            ("🎯 Savings Rate", f"{(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%", "9C27B0", "J"),
-            ("📊 Avg Daily", f"£{monthly_income/30:,.0f}", "FF9800", "M")
+            ("Monthly Income", f"${monthly_income:,.0f}", "4CAF50", "A"),
+            ("Monthly Expenses", f"${monthly_expenses:,.0f}", "F44336", "C"),
+            ("Monthly Savings", f"${monthly_savings:,.0f}", "2196F3", "E"),
+            ("Savings Rate", f"{(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%", "9C27B0", "G")
         ]
 
-        for title, value, color, col in metrics:
-            # Card background with gradient effect
-            for row in range(current_row, current_row + 3):
-                for c in range(ord(col) - ord('A'), ord(col) - ord('A') + 1):
-                    cell = charts_sheet.cell(row=row, column=c + 1)
-                    cell.fill = PatternFill(start_color=f"{color}05", end_color=f"{color}10", fill_type="solid")
-                    cell.border = Border(
-                        left=Side(style='thin', color=f"{color}30"),
-                        right=Side(style='thin', color=f"{color}30"),
-                        top=Side(style='thin', color=f"{color}30"),
-                        bottom=Side(style='thin', color=f"{color}30")
-                    )
-            
+        for i, (title, value, color, col) in enumerate(metrics):
             # Title
             charts_sheet[f'{col}{current_row}'] = title
-            charts_sheet[f'{col}{current_row}'].font = Font(size=9, bold=True, color=color)
+            charts_sheet[f'{col}{current_row}'].font = Font(size=10, bold=True, color=color)
             charts_sheet[f'{col}{current_row}'].alignment = Alignment(horizontal="center")
             
             # Value
             charts_sheet[f'{col}{current_row + 1}'] = value
-            charts_sheet[f'{col}{current_row + 1}'].font = Font(size=16, bold=True, color=color)
+            charts_sheet[f'{col}{current_row + 1}'].font = Font(size=14, bold=True, color=color)
             charts_sheet[f'{col}{current_row + 1}'].alignment = Alignment(horizontal="center")
+            
+            # Add subtle background
+            for r in range(current_row, current_row + 2):
+                charts_sheet[f'{col}{r}'].fill = PatternFill(start_color=f"{color}10", end_color=f"{color}10", fill_type="solid")
 
-        current_row += 5
+        current_row += 4
 
-        # 2. Enhanced Weekly Trend Chart (Left Side)
-        charts_sheet[f'A{current_row}'] = "📈 Weekly Financial Performance"
-        charts_sheet[f'A{current_row}'].font = Font(bold=True, size=14, color='6f42c1')
+        # 2. Weekly Trend Chart (Left Side)
+        charts_sheet[f'A{current_row}'] = "Weekly Financial Trend"
+        charts_sheet[f'A{current_row}'].font = Font(bold=True, size=12, color='6f42c1')
         current_row += 1
 
         # Write weekly data for line chart
@@ -910,187 +303,80 @@ def create_pdf_report(month=None, sections=None):
             charts_sheet.cell(row=current_row + i, column=3, value=weekly_expenses[i])
             charts_sheet.cell(row=current_row + i, column=4, value=weekly_savings[i])
 
-        # Create enhanced line chart
+        # Create line chart
         line_chart = LineChart()
-        line_chart.title = "Weekly Income vs Expenses vs Savings"
+        line_chart.title = "Weekly Income vs Expenses"
         line_chart.style = 13
-        line_chart.y_axis.title = 'Amount (£)'
+        line_chart.y_axis.title = 'Amount ($)'
         line_chart.x_axis.title = 'Week'
-        line_chart.height = 10
-        line_chart.width = 15
+        line_chart.height = 8
+        line_chart.width = 12
 
         data = Reference(charts_sheet, min_col=2, min_row=current_row, max_row=current_row + 3, max_col=4)
         line_chart.add_data(data, titles_from_data=True)
         line_chart.set_categories(Reference(charts_sheet, min_col=1, min_row=current_row + 1, max_row=current_row + 3))
 
-        # Enhanced styling for line chart
+        # Style the chart
         colors = ['4CAF50', 'F44336', '2196F3']
-        line_widths = [25000, 25000, 25000]
         for i, series in enumerate(line_chart.series):
-            series.graphicalProperties.line.width = line_widths[i]
+            series.graphicalProperties.line.width = 20000
             series.graphicalProperties.line.solidFill = colors[i]
-            series.smooth = True  # Make lines smooth
 
-        charts_sheet.add_chart(line_chart, f'F{current_row + 5}')
+        charts_sheet.add_chart(line_chart, f'I{current_row + 5}')
 
-        # 3. Enhanced Expense Breakdown (Right Side)
+        # 3. Expense Breakdown (Right Side) - Same row as weekly data
         pie_start_row = current_row
-        charts_sheet[f'K{pie_start_row}'] = "🥧 Expense Distribution"
-        charts_sheet[f'K{pie_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
+        charts_sheet[f'F{pie_start_row}'] = "Expense Breakdown"
+        charts_sheet[f'F{pie_start_row}'].font = Font(bold=True, size=12, color='6f42c1')
 
-        # Write expense data with better categories
-        expense_categories = ["🏠 Housing", "🍔 Food", "🚗 Transport", "💡 Utilities", "🎮 Entertainment", "📱 Other"]
+        # Write expense data
+        expense_categories = ["Housing", "Food", "Transport", "Utilities", "Entertainment", "Other"]
         expense_amounts = [1200, 800, 400, 300, 300, 200]
 
         for i, (cat, amt) in enumerate(zip(expense_categories, expense_amounts)):
-            charts_sheet.cell(row=pie_start_row + 1 + i, column=11, value=cat)
-            charts_sheet.cell(row=pie_start_row + 1 + i, column=12, value=amt)
+            charts_sheet.cell(row=pie_start_row + 1 + i, column=6, value=cat)
+            charts_sheet.cell(row=pie_start_row + 1 + i, column=7, value=amt)
 
-        # Create enhanced pie chart
+        # Create pie chart
         pie = PieChart()
-        labels = Reference(charts_sheet, min_col=11, min_row=pie_start_row + 1, max_row=pie_start_row + 6)
-        data = Reference(charts_sheet, min_col=12, min_row=pie_start_row, max_row=pie_start_row + 6)
+        labels = Reference(charts_sheet, min_col=6, min_row=pie_start_row + 1, max_row=pie_start_row + 6)
+        data = Reference(charts_sheet, min_col=7, min_row=pie_start_row, max_row=pie_start_row + 6)
         pie.add_data(data, titles_from_data=True)
         pie.set_categories(labels)
-        pie.title = "Monthly Expense Breakdown"
-        pie.height = 10
-        pie.width = 10
+        pie.title = "Monthly Expenses"
+        pie.height = 8
+        pie.width = 8
         pie.legend.position = 'r'
         pie.dataLabels = openpyxl.chart.label.DataLabelList()
         pie.dataLabels.showPercent = True
-        pie.dataLabels.showVal = True
 
-        # Enhanced colors for pie chart
+        # Add colors to pie chart
         colors = ['4CAF50', '8BC34A', 'FFC107', 'FF9800', 'F44336', '9C27B0']
         for i, point in enumerate(pie.series[0].dPt):
             point.graphicalProperties.solidFill = colors[i % len(colors)]
-            point.graphicalProperties.line.solidFill = "FFFFFF"
-            point.graphicalProperties.line.width = 10000
 
-        charts_sheet.add_chart(pie, f'O{pie_start_row + 8}')
+        charts_sheet.add_chart(pie, f'J{pie_start_row + 8}')
 
-        # 4. Budget vs Actual Comparison (Bottom Section)
+        # 4. Budget vs Actual (Bottom Section)
         budget_start_row = current_row + 20
-        charts_sheet.merge_cells(f'A{budget_start_row}:M{budget_start_row}')
-        charts_sheet[f'A{budget_start_row}'] = "📊 Budget vs Actual Analysis"
-        charts_sheet[f'A{budget_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
+        charts_sheet.merge_cells(f'A{budget_start_row}:H{budget_start_row}')
+        charts_sheet[f'A{budget_start_row}'] = "Budget vs Actual Comparison"
+        charts_sheet[f'A{budget_start_row}'].font = Font(bold=True, size=12, color='6f42c1')
         charts_sheet[f'A{budget_start_row}'].alignment = Alignment(horizontal="center")
         budget_start_row += 2
 
-        # Enhanced budget data
-        budget_categories = ["🏠 Housing", "🍔 Food", "🚗 Transport", "💡 Utilities", "🎮 Entertainment", "📱 Other"]
+        # Budget data
+        budget_categories = ["Housing", "Food", "Transport", "Utilities", "Entertainment", "Other"]
         budget_planned = [1100, 750, 450, 350, 250, 200]
         budget_actual = [1200, 800, 400, 300, 300, 200]
 
         # Headers
-        headers = ["Category", "Budget", "Actual", "Variance", "% Used", "Status"]
+        headers = ["Category", "Budget", "Actual", "Variance"]
         for col, header in enumerate(headers, 1):
             cell = charts_sheet.cell(row=budget_start_row, column=col, value=header)
-            cell.font = Font(bold=True, size=11, color='FFFFFF')
+            cell.font = Font(bold=True, color='FFFFFF')
             cell.fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.border = Border(
-                left=Side(style='thin'), 
-                right=Side(style='thin'), 
-                top=Side(style='thin'), 
-                bottom=Side(style='thin')
-            )
-
-        # Budget data with enhanced formatting
-        for i, (cat, planned, actual) in enumerate(zip(budget_categories, budget_planned, budget_actual)):
-            row = budget_start_row + i + 1
-            variance = actual - planned
-            percent_used = (actual / planned * 100) if planned > 0 else 0
-            status = "✅ On Track" if actual <= planned else "⚠️ Over Budget"
-            
-            charts_sheet.cell(row=row, column=1, value=cat)
-            charts_sheet.cell(row=row, column=2, value=planned).number_format = '£#,##0'
-            charts_sheet.cell(row=row, column=3, value=actual).number_format = '£#,##0'
-            charts_sheet.cell(row=row, column=4, value=variance).number_format = '£#,##0'
-            charts_sheet.cell(row=row, column=5, value=percent_used).number_format = '0.0%'
-            charts_sheet.cell(row=row, column=6, value=status)
-            
-            # Color code variance
-            variance_cell = charts_sheet.cell(row=row, column=4)
-            if variance <= 0:
-                variance_cell.font = Font(color='4CAF50')
-            else:
-                variance_cell.font = Font(color='F44336')
-            
-            # Color code percent used
-            percent_cell = charts_sheet.cell(row=row, column=5)
-            if percent_used <= 100:
-                percent_cell.font = Font(color='4CAF50')
-            else:
-                percent_cell.font = Font(color='F44336')
-
-            # Add borders
-            for col in range(1, 7):
-                cell = charts_sheet.cell(row=row, column=col)
-                cell.border = Border(
-                    left=Side(style='thin', color='e0e0e0'), 
-                    right=Side(style='thin', color='e0e0e0'), 
-                    top=Side(style='thin', color='e0e0e0'), 
-                    bottom=Side(style='thin', color='e0e0e0')
-                )
-
-        # 6. Create 3D Pie Chart for Budget Comparison
-        pie_chart_3d = PieChart()
-        pie_chart_3d.title = "Budget vs Actual Comparison"
-        pie_chart_3d.style = 12
-        pie_chart_3d.height = 8
-        pie_chart_3d.width = 12
-        pie_chart_3d.legend.position = 'r'
-
-        pie_data = Reference(charts_sheet, min_col=2, min_row=budget_start_row, max_row=budget_start_row + 6, max_col=3)
-        pie_chart_3d.add_data(pie_data, titles_from_data=True)
-        pie_chart_3d.set_categories(Reference(charts_sheet, min_col=1, min_row=budget_start_row + 1, max_row=budget_start_row + 6))
-
-        # Style pie chart
-        colors = ['6f42c1', '8b5cf6', '4CAF50', 'F44336', 'FF9800', '9C27B0']
-        for i, point in enumerate(pie_chart_3d.series[0].dPt):
-            point.graphicalProperties.solidFill = colors[i % len(colors)]
-
-        charts_sheet.add_chart(pie_chart_3d, f'H{budget_start_row + 10}')
-
-
-        # 6. Add Financial Insights Section
-        insights_start_row = budget_start_row + 25
-        charts_sheet.merge_cells(f'A{insights_start_row}:M{insights_start_row}')
-        charts_sheet[f'A{insights_start_row}'] = "💡 Key Financial Insights"
-        charts_sheet[f'A{insights_start_row}'].font = Font(bold=True, size=14, color='6f42c1')
-        charts_sheet[f'A{insights_start_row}'].alignment = Alignment(horizontal="center")
-        insights_start_row += 2
-
-        insights = [
-            f"• Your savings rate is {(monthly_savings/monthly_income*100 if monthly_income > 0 else 0):.1f}%, aim for 20%+",
-            f"• Total monthly expenses: £{monthly_expenses:,.0f} - review categories over budget",
-            f"• Average weekly income: £{monthly_income/4:,.0f} - look for opportunities to increase",
-            f"• Consider reducing entertainment budget by 10% for additional savings"
-        ]
-
-        for i, insight in enumerate(insights, start=insights_start_row):
-            charts_sheet[f'A{i}'] = insight
-            charts_sheet[f'A{i}'].font = Font(size=10, color='666666')
-            charts_sheet.row_dimensions[i].height = 20
-
-        # Auto-size columns
-        for column in charts_sheet.columns:
-            max_length = 0
-            column_letter = get_column_letter(column[0].column)
-            for cell in column:
-                try:
-                    if cell.value and len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = (max_length + 2) * 1.2
-            charts_sheet.column_dimensions[column_letter].width = min(adjusted_width, 25)
-
-        return True
-    except Exception as e:
-        print(f"Error creating charts: {str(e)}")
-        return False
+            cell.alignment = Alignment(horizontal="center")
 
         # Data
         for i, (cat, planned, actual) in enumerate(zip(budget_categories, budget_planned, budget_actual)):
@@ -1193,193 +479,101 @@ def create_ai_insights_placeholder(sheet):
             sheet[f'A{i}'].font = Font(color='6f42c1')
 
 def create_dashboard(sheet, month):
-    """Create the dashboard sheet with enhanced financial overview"""
-    # Create header with gradient effect
-    sheet.merge_cells('A1:L1')
+    """Create the dashboard sheet with financial overview"""
+    # Create header
+    sheet.merge_cells('A1:J1')
     sheet['A1'] = f"📊 {month} - Financial Dashboard"
-    sheet['A1'].font = Font(size=22, bold=True, color='FFFFFF')
-    sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='8b5cf6', fill_type="solid")
+    sheet['A1'].font = Font(size=20, bold=True, color='FFFFFF')
+    sheet['A1'].fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
     sheet['A1'].alignment = Alignment(horizontal="center", vertical="center")
-    sheet.row_dimensions[1].height = 45
+    sheet.row_dimensions[1].height = 40
     
-    # Add subtitle with better styling
-    sheet.merge_cells('A2:L2')
+    # Add subtitle
+    sheet.merge_cells('A2:J2')
     sheet['A2'] = "Your complete financial overview at a glance"
-    sheet['A2'].font = Font(size=13, color='8b5cf6', italic=True)
+    sheet['A2'].font = Font(size=12, color='6f42c1', italic=True)
     sheet['A2'].alignment = Alignment(horizontal="center")
     sheet.row_dimensions[2].height = 25
     
-    # Add decorative separator
-    sheet.merge_cells('A3:L3')
-    sheet['A3'] = "─" * 50
-    sheet['A3'].font = Font(size=8, color='e0e0e0')
-    sheet['A3'].alignment = Alignment(horizontal="center")
+    # Add spacing
     sheet.row_dimensions[3].height = 10
     
-    # Key Metrics Cards Section
-    sheet['A4'] = "📈 Key Performance Indicators"
-    sheet['A4'].font = Font(bold=True, size=16, color='6f42c1')
-    sheet.row_dimensions[4].height = 30
-    
-    # Create metric cards with better styling
-    metrics_data = [
-        ("Total Income", "£0.00", "📈", "4CAF50", "A"),
-        ("Total Expenses", "£0.00", "💸", "F44336", "D"),
-        ("Net Savings", "£0.00", "💰", "2196F3", "G"),
-        ("Savings Rate", "0.0%", "📊", "9C27B0", "J")
-    ]
-    
-    for title, value, emoji, color, col in metrics_data:
-        # Card background
-        for row in range(5, 8):
-            for c in range(ord(col) - ord('A'), ord(col) - ord('A') + 2):
-                cell = sheet.cell(row=row, column=c + 1)
-                cell.fill = PatternFill(start_color=f"{color}08", end_color=f"{color}08", fill_type="solid")
-                cell.border = Border(
-                    left=Side(style='thin', color=f"{color}40"),
-                    right=Side(style='thin', color=f"{color}40"),
-                    top=Side(style='thin', color=f"{color}40"),
-                    bottom=Side(style='thin', color=f"{color}40")
-                )
-        
-        # Emoji
-        sheet[f'{col}5'] = emoji
-        sheet[f'{col}5'].font = Font(size=16)
-        sheet[f'{col}5'].alignment = Alignment(horizontal="center")
-        
-        # Title
-        sheet[f'{col}6'] = title
-        sheet[f'{col}6'].font = Font(size=10, bold=True, color=color)
-        sheet[f'{col}6'].alignment = Alignment(horizontal="center")
-        
-        # Value
-        sheet[f'{col}7'] = value
-        sheet[f'{col}7'].font = Font(size=14, bold=True, color=color)
-        sheet[f'{col}7'].alignment = Alignment(horizontal="center")
-    
     # Financial Summary Section
-    sheet.row_dimensions[9].height = 20
-    sheet['A10'] = "💼 Financial Summary"
-    sheet['A10'].font = Font(bold=True, size=16, color='6f42c1')
-    sheet.row_dimensions[10].height = 30
+    sheet['A4'] = "Financial Summary"
+    sheet['A4'].font = Font(bold=True, size=14, color='6f42c1')
     
-    # Enhanced headers for summary table
-    headers = ["Category", "Planned", "Actual", "Difference", "% of Budget", "Status"]
-    header_colors = ["6f42c1", "6f42c1", "6f42c1", "6f42c1", "6f42c1", "6f42c1"]
-    
-    for col, (header, color) in enumerate(zip(headers, header_colors), 1):
-        cell = sheet.cell(row=11, column=col, value=header)
-        cell.font = Font(bold=True, size=11, color='FFFFFF')
-        cell.fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+    # Headers for summary table
+    headers = ["Category", "Planned", "Actual", "Difference", "% of Budget"]
+    for col, header in enumerate(headers, 1):
+        cell = sheet.cell(row=5, column=col, value=header)
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill(start_color='6f42c1', end_color='6f42c1', fill_type="solid")
         cell.border = Border(
             left=Side(style='thin'), 
             right=Side(style='thin'), 
             top=Side(style='thin'), 
             bottom=Side(style='thin')
         )
-        cell.alignment = Alignment(horizontal="center", vertical="center")
     
-    # Enhanced summary data with formulas
+    # Sample summary data
     summary_data = [
-        ["Income", 5000, "='Income Tracker'!$C$10", "=C12-B12", "=IF(B12=0,0,C12/B12*100)", 
-         "=IF(C12>=B12,\"✅ On Track\",\"⚠️ Review\")"],
-        ["Expenses", 3200, "='Expense Tracker'!$C$47", "=C13-B13", "=IF(B13=0,0,C13/B13*100)",
-         "=IF(C13<=B13,\"✅ On Budget\",\"⚠️ Over Budget\")"],
-        ["Savings", 1800, "='Savings Tracker'!$D$11", "=C14-B14", "=IF(B14=0,0,C14/B14*100)",
-         "=IF(C14>=B14,\"✅ Goal Met\",\"📈 Keep Going\")"],
-        ["Investments", 500, "='Stock Tracker'!$F$10", "=C15-B15", "=IF(B15=0,0,C15/B15*100)",
-         "=IF(C15>=B15,\"📈 Profit\",\"📉 Review\")"],
-        ["Total", "=SUM(B12:B15)", "=SUM(C12:C15)", "=C16-B16", "=IF(B16=0,0,C16/B16*100)",
-         "=IF(C16>=B16,\"✅ Positive\",\"⚠️ Negative\")"]
+        ["Income", 5000, "='Income Tracker'!$C$10", "=C6-B6", "=C6/B6*100"],
+        ["Expenses", 3200, "='Expense Tracker'!$C$47", "=C7-B7", "=C7/B7*100"],
+        ["Savings", 1800, "='Savings Tracker'!$D$11", "=C8-B8", "=C8/B8*100"],
+        ["Investments", 500, "='Stock Tracker'!$F$10", "=C9-B9", "=C9/B9*100"],
+        ["Total", "=SUM(B6:B9)", "=SUM(C6:C9)", "=C10-B10", "=C10/B10*100"]
     ]
     
-    for row_idx, row_data in enumerate(summary_data, start=12):
+    for row_idx, row_data in enumerate(summary_data, start=6):
         for col_idx, value in enumerate(row_data, 1):
             cell = sheet.cell(row=row_idx, column=col_idx, value=value)
             if col_idx == 1:  # Category column
-                cell.font = Font(bold=True, size=11)
-                cell.fill = PatternFill(start_color="f8f9fa", end_color="f8f9fa", fill_type="solid")
-            elif col_idx == 6:  # Status column
-                cell.font = Font(size=10)
-                cell.alignment = Alignment(horizontal="center")
-            else:  # Numeric columns
-                cell.number_format = '£#,##0.00'
-                cell.alignment = Alignment(horizontal="right")
-            
+                cell.font = Font(bold=True)
             cell.border = Border(
-                left=Side(style='thin', color='e0e0e0'), 
-                right=Side(style='thin', color='e0e0e0'), 
-                top=Side(style='thin', color='e0e0e0'), 
-                bottom=Side(style='thin', color='e0e0e0')
+                left=Side(style='thin'), 
+                right=Side(style='thin'), 
+                top=Side(style='thin'), 
+                bottom=Side(style='thin')
             )
     
-    # Monthly Purchases Summary Section
-    sheet.row_dimensions[17].height = 20
-    sheet['A18'] = "🛍️ Monthly Purchases Analysis"
-    sheet['A18'].font = Font(bold=True, size=16, color='6f42c1')
-    sheet.row_dimensions[18].height = 30
+    # Add some spacing
+    sheet.row_dimensions[11].height = 20
     
-    # Enhanced headers for monthly purchases
-    mp_headers = ["Type", "Count", "Total Amount", "Average", "Monthly Impact", "Trend"]
+    # Monthly Purchases Summary (if Monthly Purchases sheet exists)
+    sheet['A12'] = "Monthly Purchases Summary"
+    sheet['A12'].font = Font(bold=True, size=14, color='6f42c1')
+    
+    # Headers for monthly purchases
+    mp_headers = ["Type", "Count", "Total Amount", "Average"]
     for col, header in enumerate(mp_headers, 1):
-        cell = sheet.cell(row=19, column=col, value=header)
-        cell.font = Font(bold=True, size=11, color='FFFFFF')
-        cell.fill = PatternFill(start_color='8b5cf6', end_color='8b5cf6', fill_type="solid")
+        cell = sheet.cell(row=13, column=col, value=header)
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill(start_color='D8BFD8', end_color='D8BFD8', fill_type="solid")
         cell.border = Border(
             left=Side(style='thin'), 
             right=Side(style='thin'), 
             top=Side(style='thin'), 
             bottom=Side(style='thin')
         )
-        cell.alignment = Alignment(horizontal="center", vertical="center")
     
-    # Enhanced monthly purchases data
+    # Sample monthly purchases data
     mp_data = [
-        ["Subscriptions", "=COUNT('Monthly Purchases'!C:C)", "=SUM('Monthly Purchases'!C:C)", 
-         "=IF(B20=0,0,C20/B20)", "=C20/('Expense Tracker'!$C$47)", "📊 Stable"],
-        ["One-Time", "=COUNTIF('Monthly Purchases'!D:D,\"One-Time\")", 
-         "=SUMIF('Monthly Purchases'!D:D,\"One-Time\",'Monthly Purchases'!C:C)", 
-         "=IF(B21=0,0,C21/B21)", "=C21/('Expense Tracker'!$C$47)", "📈 Variable"],
-        ["Total", "=B20+B21", "=C20+C21", "=IF(B22=0,0,C22/B22)", "=C22/('Expense Tracker'!$C$47)", "📊 Combined"]
+        ["Subscriptions", 5, "='Monthly Purchases'!$C$10", "=C14/B14"],
+        ["One-Time", 3, "='Monthly Purchases'!$C$15", "=C15/B15"],
+        ["Total", "=B14+B15", "=C14+C15", "=C16/B16"]
     ]
     
-    for row_idx, row_data in enumerate(mp_data, start=20):
+    for row_idx, row_data in enumerate(mp_data, start=14):
         for col_idx, value in enumerate(row_data, 1):
             cell = sheet.cell(row=row_idx, column=col_idx, value=value)
             if col_idx == 1:  # Type column
-                cell.font = Font(bold=True, size=11)
-                cell.fill = PatternFill(start_color="f8f9fa", end_color="f8f9fa", fill_type="solid")
-            elif col_idx == 6:  # Trend column
-                cell.font = Font(size=10)
-                cell.alignment = Alignment(horizontal="center")
-            else:  # Numeric columns
-                cell.number_format = '£#,##0.00'
-                cell.alignment = Alignment(horizontal="right")
-            
+                cell.font = Font(bold=True)
             cell.border = Border(
-                left=Side(style='thin', color='e0e0e0'), 
-                right=Side(style='thin', color='e0e0e0'), 
-                top=Side(style='thin', color='e0e0e0'), 
-                bottom=Side(style='thin', color='e0e0e0')
+                left=Side(style='thin'), 
+                right=Side(style='thin'), 
+                top=Side(style='thin'), 
+                bottom=Side(style='thin')
             )
-    
-    # Add insights section
-    sheet.row_dimensions[23].height = 20
-    sheet['A24'] = "💡 Financial Insights"
-    sheet['A24'].font = Font(bold=True, size=16, color='6f42c1')
-    sheet.row_dimensions[24].height = 30
-    
-    insights = [
-        "• Track your spending patterns to identify areas for improvement",
-        "• Aim to save at least 20% of your monthly income",
-        "• Review subscriptions regularly to eliminate unnecessary expenses",
-        "• Consider setting up automatic transfers for savings goals"
-    ]
-    
-    for i, insight in enumerate(insights, start=25):
-        sheet[f'A{i}'] = insight
-        sheet[f'A{i}'].font = Font(size=10, color='666666')
-        sheet.row_dimensions[i].height = 20
     
     # Auto-size columns
     for column in sheet.columns:
@@ -1488,11 +682,6 @@ def create_excel_template(month=None, sections=None):
                 ["Tuesday", "Smoothie", "Sandwich", "Pasta", "Nuts", "Bread, pasta, nuts"]
             ]
         },
-        "Debt Tracker": {
-            "headers": ["Person/Company", "Type", "Amount Owed", "Amount Owe Me", "Due Date", "Status", "Priority", "Notes"],
-            "color": "FF6B6B",  # Red
-            "sample_data": []
-        },
         "Time Table": {
             "headers": ["Time", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
             "color": "98FF98",  # Mint
@@ -1566,7 +755,73 @@ def create_excel_template(month=None, sections=None):
     create_dashboard(dashboard, month)
     sheet_order.append('Dashboard')
     
-    create_excel_template_simple(month=month, sections=sections)
+    # Create selected sheets
+    for section in sections:
+        if section in section_mapping:
+            tab_name = section_mapping[section]
+            if tab_name in all_tabs:
+                tab_data = all_tabs[tab_name]
+                sheet = wb.create_sheet(tab_name)
+                sheet_order.append(tab_name)
+                
+                # Create header with emoji and styling
+                create_header(sheet, f"📋 {tab_name}", tab_data.get("color", "6f42c1"))
+                
+                # Add column headers
+                headers = tab_data["headers"]
+                for col_num, header in enumerate(headers, start=1):
+                    cell = sheet.cell(row=3, column=col_num, value=header)
+                    cell.font = Font(bold=True, color='FFFFFF')
+                    cell.fill = PatternFill(
+                        start_color=tab_data.get("color", "6f42c1"), 
+                        end_color=tab_data.get("color", "6f42c1"), 
+                        fill_type='solid'
+                    )
+                    cell.border = Border(
+                        left=Side(style='thin'), 
+                        right=Side(style='thin'), 
+                        top=Side(style='thin'), 
+                        bottom=Side(style='thin')
+                    )
+                
+                # Add sample data if available
+                if "sample_data" in tab_data and tab_data["sample_data"]:
+                    data = tab_data["sample_data"]
+                    for row_num, row_data in enumerate(data, start=4):
+                        for col_num, cell_value in enumerate(row_data, start=1):
+                            cell = sheet.cell(row=row_num, column=col_num, value=cell_value)
+                            if isinstance(cell_value, (int, float)) and not isinstance(cell_value, bool):
+                                cell.number_format = '0.00'  # Removed currency symbol
+                
+                # Add total row if there are numeric columns
+                if data and len(data[0]) > 1:  # Only if there are columns to sum
+                    total_row = len(data) + 4
+                    sheet.cell(row=total_row, column=1, value="Total").font = Font(bold=True)
+                    
+                    # Calculate and add totals for numeric columns
+                    for col in range(2, len(headers) + 1):
+                        if any(isinstance(sheet.cell(row=r, column=col).value, (int, float)) 
+                              for r in range(4, total_row)):
+                            # Calculate sum of the column
+                            total = sum(sheet.cell(row=r, column=col).value or 0 
+                                      for r in range(4, total_row) 
+                                      if isinstance(sheet.cell(row=r, column=col).value, (int, float)))
+                            cell = sheet.cell(row=total_row, column=col, value=total)
+                            cell.font = Font(bold=True)
+                            cell.number_format = '0.00'  # Format total without currency
+                
+                # Auto-size columns for the current sheet
+                for column in sheet.columns:
+                    max_length = 0
+                    column_letter = get_column_letter(column[0].column)
+                    for cell in column:
+                        try:
+                            if cell.value and not isinstance(cell, openpyxl.cell.cell.MergedCell):
+                                max_length = max(max_length, len(str(cell.value)))
+                        except:
+                            pass
+                    adjusted_width = (max_length + 2) * 1.2
+                    sheet.column_dimensions[column_letter].width = min(adjusted_width, 30)
     
     welcome_text = [
         "Thank you for choosing the Life & Budget Dashboard! This comprehensive tool will help you manage:",
@@ -1770,7 +1025,7 @@ def create_excel_template(month=None, sections=None):
                 cell.fill = PatternFill(start_color='F2E6FF', end_color='F2E6FF', fill_type='solid')
     
     # 3. Expense Breakdown Pie Chart (Bottom-left) - 3D with percentage and legend
-    expense_pie = PieChart()
+    expense_pie = PieChart3D()
     data = Reference(dashboard, min_col=2, min_row=26, max_row=31)
     labels = Reference(dashboard, min_col=1, min_row=26, max_row=31)
     expense_pie.add_data(data, titles_from_data=False)
@@ -1793,7 +1048,7 @@ def create_excel_template(month=None, sections=None):
     charts_sheet.add_chart(expense_pie, "A25")
     
     # 4. Budget Distribution Donut Chart (Bottom-right)
-    pie = PieChart()
+    pie = PieChart3D()
     data = Reference(dashboard, min_col=2, min_row=4, max_row=6)
     labels = Reference(dashboard, min_col=1, min_row=4, max_row=6)
     pie.add_data(data, titles_from_data=False)
@@ -2411,7 +1666,6 @@ Analyze the following financial and personal data to provide comprehensive insig
 - Income and expense tracking
 - Savings and investment information
 - Health and lifestyle metrics
-- Debt tracking and obligations
 
 ## Analysis Instructions
 For each relevant data section, provide:
@@ -2432,30 +1686,22 @@ For each relevant data section, provide:
 - Compare fixed vs. variable expenses
 - Evaluate emergency fund status (if data available)
 
-### 2. Debt Analysis (if debt data available)
-- Analyze total debt burden and net debt position
-- Identify high-priority debts that need immediate attention
-- Suggest debt repayment strategies (avalanche vs snowball method)
-- Highlight any overdue or upcoming due dates
-- Analyze debt-to-income ratio implications
-
-### 3. Spending Analysis
+### 2. Spending Analysis
 - Identify any unusual or outlier transactions
 - Highlight any recurring subscriptions or expenses that could be reduced
 - Compare spending against common budgeting guidelines (e.g., 50/30/20 rule)
 
-### 4. Income & Budget Optimization
+### 3. Income & Budget Optimization
 - Analyze income stability and sources
 - Suggest potential areas for expense reduction
-- Recommend budget allocation improvements considering debt obligations
+- Recommend budget allocation improvements
 
-### 5. Savings & Investments
+### 4. Savings & Investments
 - Evaluate current savings rate
 - Assess investment diversification (if data available)
 - Suggest potential savings goals based on income/expense patterns
-- Recommend how to balance debt repayment with savings goals
 
-### 6. Lifestyle & Health (if data available)
+### 5. Lifestyle & Health (if data available)
 - Analyze any health metrics for trends
 - Correlate lifestyle choices with financial patterns
 - Suggest holistic improvements that benefit both health and finances
@@ -2614,481 +1860,6 @@ Note: Be specific with numbers and percentages where possible. Use emojis for be
     except Exception as e:
         return "", f"❌ Error: {str(e)}"
 
-def parse_monzo_statement(file_content):
-    """Parse Monzo bank statement from CSV or PDF"""
-    try:
-        # First try to detect if it's a PDF
-        if file_content.startswith(b'%PDF'):
-            return parse_monzo_pdf_statement(file_content)
-        
-        # Try to parse as CSV
-        df = pd.read_csv(StringIO(file_content.decode('utf-8')))
-        
-        # Debug: Show the columns we found
-        print(f"Monzo statement columns found: {list(df.columns)}")
-        print(f"First few rows:\n{df.head()}")
-        
-        # Standardize Monzo columns - be more flexible with column names
-        # Common Monzo column variations
-        column_mapping = {
-            'date': 'Date',
-            'time': 'Time',
-            'type': 'Type',
-            'description': 'Description',
-            'category': 'Category',
-            'amount': 'Amount',
-            'balance': 'Balance',
-            'transaction_type': 'Transaction Type'
-        }
-        
-        # Try to find the correct columns
-        date_col = None
-        desc_col = None
-        amount_col = None
-        category_col = None
-        
-        for col in df.columns:
-            col_lower = str(col).lower().strip()
-            if col_lower in ['date', 'transaction date', 'posted date']:
-                date_col = col
-            elif col_lower in ['description', 'details', 'transaction description', 'memo', 'notes']:
-                desc_col = col
-            elif col_lower in ['amount', 'value', 'debit', 'credit', 'transaction amount']:
-                amount_col = col
-            elif col_lower in ['category', 'type', 'transaction type']:
-                category_col = col
-        
-        if date_col and desc_col and amount_col:
-            # Rename columns to standard names
-            df = df.rename(columns={
-                date_col: 'Date',
-                desc_col: 'Description',
-                amount_col: 'Amount'
-            })
-            
-            # Ensure Amount is numeric
-            df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce')
-            
-            # Add bank and transaction type
-            df['Bank'] = 'Monzo'
-            df['Transaction Type'] = df['Amount'].apply(lambda x: 'Income' if x > 0 else 'Expense')
-            
-            # Handle Monzo categories - if they exist, use them; otherwise categorize by description
-            if category_col and category_col in df.columns:
-                # Check if Monzo already has pot transfer categories
-                df['Category'] = df[category_col].apply(lambda x: 
-                    'Pot Transfer' if 'pot' in str(x).lower() else categorize_transaction(x)
-                )
-                # Drop the original category column to avoid confusion
-                df = df.drop(columns=[category_col])
-            else:
-                df['Category'] = df['Description'].apply(categorize_transaction)
-            
-            return df
-        else:
-            print(f"Could not find required columns. Date: {date_col}, Description: {desc_col}, Amount: {amount_col}")
-            return None
-    except Exception as e:
-        print(f"Error parsing Monzo statement: {str(e)}")
-        return None
-
-def extract_monzo_balance_summary(text):
-    """Extract balance summary information from Monzo PDF header"""
-    balance_info = {}
-    
-    try:
-        # Extract Total balance (Including all Pots and Cashback)
-        total_balance_match = re.search(r'Total balance\(Including all Pots and Cashback\)£(\d{1,3}(?:,\d{3})*\.\d{2})', text)
-        if total_balance_match:
-            balance_info['total_balance_including_pots'] = float(total_balance_match.group(1).replace(',', ''))
-        
-        # Extract Personal Account balance (Excluding all Pots)
-        personal_balance_match = re.search(r'Personal Account balance\(Excluding all Pots\)£(\d{1,3}(?:,\d{3})*\.\d{2})', text)
-        if personal_balance_match:
-            balance_info['personal_account_balance'] = float(personal_balance_match.group(1).replace(',', ''))
-        
-        # Extract Balance in Pots
-        pots_balance_match = re.search(r'Balance in Pots\(This includes both Regular Pots with Monzo and SavingsPots with external providers\)£(\d{1,3}(?:,\d{3})*\.\d{2})', text)
-        if pots_balance_match:
-            balance_info['balance_in_pots'] = float(pots_balance_match.group(1).replace(',', ''))
-        
-        # Extract Cashback Balance
-        cashback_balance_match = re.search(r'Cashback Balance-£(\d{1,3}(?:,\d{3})*\.\d{2})', text)
-        if cashback_balance_match:
-            balance_info['cashback_balance'] = float(cashback_balance_match.group(1).replace(',', ''))
-        
-        # Extract Total outgoings
-        outgoings_match = re.search(r'Total outgoings\+£(\d{1,3}(?:,\d{3})*\.\d{2})', text)
-        if outgoings_match:
-            balance_info['total_outgoings'] = float(outgoings_match.group(1).replace(',', ''))
-        
-        # Extract Total deposits
-        deposits_match = re.search(r'Total deposits£(\d{1,3}(?:,\d{3})*\.\d{2})', text)
-        if deposits_match:
-            balance_info['total_deposits'] = float(deposits_match.group(1).replace(',', ''))
-            
-    except Exception as e:
-        print(f"Error extracting balance summary: {str(e)}")
-    
-    return balance_info
-
-def parse_monzo_pdf_statement(file_content):
-    """Parse Monzo PDF statement by extracting text with improved parsing for concatenated format"""
-    try:
-        import PyPDF2
-        import io
-        import re
-        
-        # Read PDF
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_content))
-        text = ""
-        
-        # Extract text from all pages
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
-        
-        print(f"Extracted PDF text (first 1000 chars):\n{text[:1000]}")
-        
-        # Extract balance summary from header
-        balance_info = extract_monzo_balance_summary(text)
-        
-        # Parse Monzo PDF format - handle concatenated transaction format
-        all_transactions = []
-        
-        # Use regex to find all transaction patterns in the concatenated text
-        # Pattern: DD/MM/YYYYDescriptionAmountBalanceAmount
-        transaction_pattern = r'(\d{2}/\d{2}/\d{4})([A-Za-z0-9\s\.\-\(\)\/]+?)(-?\d+\.\d{2})(-?\d+\.\d{2})'
-        
-        matches = re.findall(transaction_pattern, text)
-        print(f"Found {len(matches)} transaction matches using regex")
-        
-        for match in matches:
-            date_str, description, amount_str, balance_str = match
-            
-            try:
-                amount = float(amount_str)
-                balance = float(balance_str)
-                
-                # Clean up description
-                description = description.strip()
-                
-                # Skip obvious invalid transactions but keep pot transfers
-                if (len(description) < 2 or 
-                    description.isdigit() or
-                    any(keyword in description.lower() for keyword in [
-                        'balance', 'total', 'account', 'statement', 'anthony', 'kinyua', 'gathukia',
-                        'flat', 'room', 'house', 'court', 'road', 'nottingham', 'ng7', 'united', 'kingdom'
-                    ])):
-                    continue
-                
-                # Only consider reasonable transaction amounts
-                if abs(amount) < 0.01 or abs(amount) > 10000:
-                    continue
-                
-                all_transactions.append({
-                    'Date': datetime.datetime.strptime(date_str, '%d/%m/%Y').strftime('%Y-%m-%d'),
-                    'Description': description,
-                    'Amount': amount,
-                    'Balance': balance,
-                    'Bank': 'Monzo',
-                    'Transaction Type': 'Income' if amount > 0 else 'Expense',
-                    'Category': categorize_transaction(description)
-                })
-                
-            except (ValueError, IndexError) as e:
-                print(f"Error parsing transaction: {match}, Error: {e}")
-                continue
-        
-        # If regex didn't work well, try alternative approach
-        if len(all_transactions) < 10:
-            print("Regex approach found few transactions, trying alternative parsing...")
-            
-            # Alternative: split by date pattern
-            date_pattern = r'(\d{2}/\d{2}/\d{4})'
-            parts = re.split(date_pattern, text)
-            
-            current_date = None
-            for i in range(1, len(parts), 2):  # Skip the first empty part
-                if i + 1 < len(parts):
-                    date_str = parts[i]
-                    content = parts[i + 1]
-                    
-                    try:
-                        current_date = datetime.datetime.strptime(date_str, '%d/%m/%Y').strftime('%Y-%m-%d')
-                        
-                        # Find all amounts in this section
-                        amount_matches = re.findall(r'(-?\d+\.\d{2})', content)
-                        
-                        if len(amount_matches) >= 2:  # Need at least amount and balance
-                            amount = float(amount_matches[0])
-                            
-                            # Extract description (text between date and first amount)
-                            description = content[:content.find(amount_matches[0])].strip()
-                            
-                            # Skip invalid transactions but keep pot transfers
-                            if (len(description) >= 2 and 
-                                not description.isdigit() and
-                                abs(amount) >= 0.01 and abs(amount) <= 10000 and
-                                not any(keyword in description.lower() for keyword in [
-                                    'balance', 'total', 'account', 'statement'
-                                ])):
-                                
-                                all_transactions.append({
-                                    'Date': current_date,
-                                    'Description': description,
-                                    'Amount': amount,
-                                    'Bank': 'Monzo',
-                                    'Transaction Type': 'Income' if amount > 0 else 'Expense',
-                                    'Category': categorize_transaction(description)
-                                })
-                    
-                    except (ValueError, IndexError):
-                        continue
-        
-        # Filter and keep ALL valid transactions (including duplicates)
-        valid_transactions = []
-        
-        for trans in all_transactions:
-            desc = trans['Description'].strip()
-            desc_lower = desc.lower()
-            
-            # Skip obvious invalid transactions but keep pot transfers
-            if (len(desc) < 2 or 
-                desc.isdigit() or
-                any(keyword in desc_lower for keyword in [
-                    'balance', 'total', 'account', 'statement', 'anthony', 'kinyua', 'gathukia',
-                    'flat', 'room', 'house', 'court', 'road', 'nottingham', 'ng7', 'united', 'kingdom'
-                ])):
-                continue
-            
-            # Keep ALL valid transactions, no deduplication
-            valid_transactions.append(trans)
-        
-        if valid_transactions:
-            df = pd.DataFrame(valid_transactions)
-            print(f"Successfully parsed {len(valid_transactions)} transactions from PDF (from {len(all_transactions)} raw matches)")
-            print(f"Date range: {df['Date'].min()} to {df['Date'].max()}")
-            
-            # Add balance summary information to the dataframe
-            if balance_info:
-                for key, value in balance_info.items():
-                    df.attrs[key] = value
-            
-            return df
-        else:
-            print("No transactions found in PDF")
-            return None
-            
-    except ImportError:
-        print("PyPDF2 not installed. Install with: pip install PyPDF2")
-        return None
-    except Exception as e:
-        print(f"Error parsing Monzo PDF: {str(e)}")
-        return None
-
-def parse_lloyds_statement(file_content):
-    """Parse Lloyds bank statement"""
-    try:
-        # Try CSV format
-        df = pd.read_csv(StringIO(file_content.decode('utf-8')))
-        
-        # Standardize Lloyds columns
-        if 'Transaction Date' in df.columns or 'Date' in df.columns:
-            date_col = 'Transaction Date' if 'Transaction Date' in df.columns else 'Date'
-            df = df.rename(columns={date_col: 'Date'})
-            
-            if 'Description' not in df.columns and 'Transaction Details' in df.columns:
-                df = df.rename(columns={'Transaction Details': 'Description'})
-                
-            if 'Amount' not in df.columns and 'Debit Amount' in df.columns:
-                df['Amount'] = df['Debit Amount'].fillna(0) - df['Credit Amount'].fillna(0)
-            
-            df['Bank'] = 'Lloyds'
-            df['Transaction Type'] = df['Amount'].apply(lambda x: 'Income' if x > 0 else 'Expense')
-            df['Category'] = df['Description'].apply(categorize_transaction)
-            return df
-        else:
-            return None
-    except:
-        return None
-
-def parse_barclays_statement(file_content):
-    """Parse Barclays bank statement"""
-    try:
-        # Try CSV format
-        df = pd.read_csv(StringIO(file_content.decode('utf-8')))
-        
-        # Standardize Barclays columns
-        if 'Transaction Date' in df.columns or 'Date' in df.columns:
-            date_col = 'Transaction Date' if 'Transaction Date' in df.columns else 'Date'
-            df = df.rename(columns={date_col: 'Date'})
-            
-            if 'Description' not in df.columns and 'Transaction Description' in df.columns:
-                df = df.rename(columns={'Transaction Description': 'Description'})
-                
-            df['Bank'] = 'Barclays'
-            df['Transaction Type'] = df['Amount'].apply(lambda x: 'Income' if x > 0 else 'Expense')
-            df['Category'] = df['Description'].apply(categorize_transaction)
-            return df
-        else:
-            return None
-    except:
-        return None
-
-def categorize_transaction(description):
-    """Categorize transactions based on description"""
-    description = str(description).lower().strip()
-    
-    # Pot transfers - handle these first as they're special
-    if any(keyword in description for keyword in [
-        'transfer from pot', 'transfer to pot', 'pot transfer', 'pot to pot', 'between pots', 
-        'move to pot', 'pot withdrawal', 'monzo pot', 'pot deposit', 'pot withdrawal', 
-        'savings pot', 'bills pot', 'expenses pot', 'shared pot', 'monzo plus pot'
-    ]):
-        return 'Pot Transfer'
-    
-    # P2P payments - handle before general categories
-    if any(keyword in description for keyword in ['p2p payment', 'payment to', 'paid to']):
-        return 'Transfers & Payments'
-    
-    # Income categories
-    if any(keyword in description for keyword in ['salary', 'wages', 'pay', 'income']):
-        return 'Income'
-    elif any(keyword in description for keyword in ['refund', 'return', 'cashback']):
-        return 'Refund'
-    
-    # Housing & Utilities
-    elif any(keyword in description for keyword in ['rent', 'mortgage', 'property', 'council tax']):
-        return 'Housing'
-    elif any(keyword in description for keyword in ['electric', 'gas', 'water', 'bill', 'utility', 'broadband', 'internet']):
-        return 'Utilities'
-    
-    # Food & Dining
-    elif any(keyword in description for keyword in ['tesco', 'sainsbury', 'asda', 'morrisons', 'grocery', 'food', 'supermarket']):
-        return 'Groceries'
-    elif any(keyword in description for keyword in ['restaurant', 'cafe', 'coffee', 'dining', 'eat', 'takeaway', 'deliveroo', 'just eat']):
-        return 'Dining Out'
-    elif any(keyword in description for keyword in ['pub', 'bar', 'wine', 'beer']):
-        return 'Alcohol & Social'
-    
-    # Transportation
-    elif any(keyword in description for keyword in ['uber', 'taxi', 'bus', 'train', 'tube', 'transport', 'tfl', 'national rail']):
-        return 'Transportation'
-    elif any(keyword in description for keyword in ['petrol', 'gas', 'fuel', 'parking']):
-        return 'Car Expenses'
-    
-    # Shopping
-    elif any(keyword in description for keyword in ['amazon', 'ebay', 'shop', 'store', 'purchase', 'retail']):
-        return 'Shopping'
-    elif any(keyword in description for keyword in ['clothing', 'fashion', 'h&m', 'zara', 'primark']):
-        return 'Clothing'
-    elif any(keyword in description for keyword in ['pharmacy', 'boots', 'superdrug', 'medicine']):
-        return 'Health & Pharmacy'
-    
-    # Entertainment & Subscriptions
-    elif any(keyword in description for keyword in ['netflix', 'spotify', 'subscription', 'prime', 'disney+']):
-        return 'Subscriptions'
-    elif any(keyword in description for keyword in ['cinema', 'movie', 'entertainment', 'theatre', 'concert']):
-        return 'Entertainment'
-    elif any(keyword in description for keyword in ['gym', 'fitness', 'health', 'exercise']):
-        return 'Health & Fitness'
-    
-    # Financial Services (exclude pot transfers which are handled above)
-    elif any(keyword in description for keyword in ['bank', 'interest', 'fee', 'charge', 'payment']):
-        return 'Banking & Fees'
-    
-    # Personal Care
-    elif any(keyword in description for keyword in ['hair', 'beauty', 'salon', 'barber']):
-        return 'Personal Care'
-    
-    # Technology
-    elif any(keyword in description for keyword in ['apple', 'google', 'microsoft', 'app', 'software']):
-        return 'Technology'
-    
-    # Travel
-    elif any(keyword in description for keyword in ['hotel', 'flight', 'holiday', 'travel', 'airbnb', 'booking']):
-        return 'Travel'
-    
-    # Education
-    elif any(keyword in description for keyword in ['course', 'education', 'book', 'university']):
-        return 'Education'
-    
-    # Charity
-    elif any(keyword in description for keyword in ['charity', 'donation', 'fund']):
-        return 'Charity & Donations'
-    
-    else:
-        return 'Other'
-
-def analyze_financial_performance(df):
-    """Analyze financial performance using Ollama"""
-    try:
-        # Separate pot transfers from regular transactions
-        pot_transfers = df[df['Category'] == 'Pot Transfer']
-        regular_transactions = df[df['Category'] != 'Pot Transfer']
-        
-        # Prepare summary statistics (excluding pot transfers for main calculations)
-        total_income = regular_transactions[regular_transactions['Amount'] > 0]['Amount'].sum()
-        total_expenses = abs(regular_transactions[regular_transactions['Amount'] < 0]['Amount'].sum())
-        net_savings = total_income - total_expenses
-        pot_transfer_total = abs(pot_transfers['Amount'].sum()) if not pot_transfers.empty else 0
-        
-        # Category breakdown (exclude pot transfers from expenses)
-        expense_by_category = regular_transactions[regular_transactions['Amount'] < 0].groupby('Category')['Amount'].sum().abs().sort_values(ascending=False)
-        
-        # Recent transactions (show more transactions)
-        recent_transactions = df.head(20).to_dict('records')
-        
-        # Create an optimized prompt for faster processing
-        # Limit data sent to Ollama to prevent timeouts
-        category_summary = expense_by_category.head(10).to_string() if len(expense_by_category) > 10 else expense_by_category.to_string()
-        
-        prompt = f"""Analyze this financial data:
-        
-        SUMMARY:
-        - Total Income: ${total_income:,.2f}
-        - Total Expenses: ${total_expenses:,.2f}
-        - Net Savings: ${net_savings:,.2f}
-        - Pot Transfers: ${pot_transfer_total:,.2f}
-        - Balance Left: ${total_income - total_expenses:,.2f}
-        - Total Transactions: {len(df)}
-        - Regular Transactions: {len(regular_transactions)}
-        - Pot Transfer Transactions: {len(pot_transfers)}
-        
-        TOP EXPENSE CATEGORIES:
-        {category_summary}
-        
-        RECENT TRANSACTIONS (sample):
-        {str(recent_transactions[:5])}
-        
-        Provide analysis covering:
-        1. Financial health assessment
-        2. Main spending patterns
-        3. Top savings opportunities
-        4. 3-4 specific recommendations
-        5. Note about pot transfers if present (these are internal money movements between accounts/pots)
-        
-        Keep response concise but thorough."""
-        
-        # Call Ollama without timeout for unlimited processing time
-        try:
-            result = subprocess.run(
-                ['ollama', 'run', 'llama2', prompt],
-                capture_output=True,
-                text=True
-            )
-            
-            if result.returncode == 0:
-                return result.stdout
-            else:
-                return f"⚠️ Ollama analysis failed: {result.stderr}"
-                
-        except Exception as e:
-            return f"⚠️ Error during analysis: {str(e)}"
-            
-    except Exception as e:
-        return f"❌ Error preparing analysis: {str(e)}"
-
 def main():
     st.title("📊 Life & Budget Dashboard")
     st.markdown("### Your All-in-One Financial and Personal Management Tool")
@@ -3116,7 +1887,7 @@ def main():
     
     # Sidebar for navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Generate Template", "AI Insights", "AI Template Converter", "Bank Statement Analysis"])
+    page = st.sidebar.radio("Go to", ["Home", "Generate Template", "AI Insights", "AI Template Converter"])
     
     if page == "Home":
         st.markdown("""
@@ -3151,8 +1922,7 @@ def main():
             expenses = st.checkbox("Expenses", value=True, key="expenses_cb")
             monthly_purchases = st.checkbox("Monthly Purchases", value=True, key="monthly_purchases_cb")
             savings = st.checkbox("Savings", value=True, key="savings_cb")
-            stocks = st.checkbox("📊 Stock Tracker", value=True, key="stocks_cb")
-            debt = st.checkbox("💳 Debt Tracker", value=True, key="debt_cb")
+            stocks = st.checkbox("Stocks", value=True, key="stocks_cb")
         
         with col2:
             st.markdown("**Health**")
@@ -3173,7 +1943,6 @@ def main():
         if expenses: selected_sections.append("expenses")
         if savings: selected_sections.append("savings")
         if stocks: selected_sections.append("stocks")
-        if debt: selected_sections.append("debt")
         if weight: selected_sections.append("weight")
         if habits: selected_sections.append("habits")
         if cleaning: selected_sections.append("cleaning")
@@ -3185,8 +1954,9 @@ def main():
         # If no sections are selected, include all
         if not selected_sections:
             selected_sections = [
-                'income', 'expenses', 'monthly_purchases', 'savings', 'stocks', 
-                'debt', 'weight', 'habits', 'cleaning', 'meals', 'timetable'
+                'income', 'expenses', 'savings', 'stocks',
+                'weight', 'habits', 'cleaning', 'meals', 'timetable',
+                'monthly_purchases'
             ]
 
         if st.button("🔍 Generate Preview"):
@@ -3214,7 +1984,7 @@ def main():
                     # Create the template with the selected month and sections
                     wb = create_excel_template(month=selected_month, sections=selected_sections)
                     
-                    # Debug: Print the sheets that were created
+                                # Debug: Print the sheets that were created
                     st.sidebar.write("Sheets created:", wb.sheetnames)
                     
                     # Add Monthly Purchases sheet if expenses are included
@@ -3246,50 +2016,12 @@ def main():
                     bytes_data = f.read()
                 
                 st.success(f"{selected_month} template created successfully!")
-                
-                # Create columns for download options
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.download_button(
-                        label=f"📥 Download Excel Template",
-                        data=bytes_data,
-                        file_name=f"life_budget_tracker_{selected_month}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                
-                with col2:
-                    # Generate PDF report
-                    with st.spinner("Creating PDF report..."):
-                        try:
-                            pdf_data = create_pdf_report(month=selected_month, sections=selected_sections)
-                            if pdf_data:
-                                st.download_button(
-                                    label=f"📄 Download PDF Report",
-                                    data=pdf_data,
-                                    file_name=f"financial_report_{selected_month}.pdf",
-                                    mime="application/pdf"
-                                )
-                            else:
-                                st.error("Failed to generate PDF report")
-                        except Exception as e:
-                            st.error(f"Error creating PDF: {str(e)}")
-                
-                # Show features comparison
-                st.markdown("---")
-                st.markdown("### 📋 Export Options Comparison")
-                
-                comparison_data = [
-                    ["Feature", "Excel Template", "PDF Report"],
-                    ["📊 Charts & Graphs", "✅ Interactive", "✅ High-Quality"],
-                    ["📝 Data Entry", "✅ Editable", "❌ Read-only"],
-                    ["📱 Mobile Friendly", "⚠️ Limited", "✅ Optimized"],
-                    ["🎨 Professional Design", "✅ Enhanced", "✅ Premium"],
-                    ["📈 Financial Analysis", "✅ Formulas", "✅ Insights"],
-                    ["🔄 Real-time Updates", "✅ Dynamic", "❌ Static"]
-                ]
-                
-                comparison_table = st.table(comparison_data)
+                st.download_button(
+                    label=f"📥 Download {selected_month} Template",
+                    data=bytes_data,
+                    file_name=f"life_budget_tracker_{selected_month}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
                 
                 # Clean up
                 os.unlink(file_path)
@@ -3362,7 +2094,6 @@ def main():
             'Expenses',
             'Savings',
             'Investments',
-            'Debt',
             'Health',
             'Lifestyle'
         ]
@@ -3421,258 +2152,6 @@ def main():
                     finally:
                         if os.path.exists(tmp_path):
                             os.unlink(tmp_path)
-    
-    elif page == "Bank Statement Analysis":
-        st.header("🏦 Bank Statement Analysis")
-        st.write("Upload your bank statement for AI-powered financial performance analysis using Ollama.")
-        
-        # Bank selection
-        st.subheader("Select Your Bank")
-        bank_options = ["Monzo", "Lloyds", "Barclays"]
-        selected_bank = st.selectbox("Choose your bank:", bank_options)
-        
-        # File upload
-        st.subheader(f"Upload {selected_bank} Statement")
-        uploaded_file = st.file_uploader(
-            f"Choose your {selected_bank} statement file",
-            type=["csv", "pdf", "xlsx", "xls"],
-            key="bank_statement"
-        )
-        
-        if uploaded_file is not None:
-            st.success(f"✅ {selected_bank} statement uploaded successfully!")
-            
-            # Parse the statement based on bank
-            with st.spinner(f"Parsing {selected_bank} statement..."):
-                file_content = uploaded_file.getvalue()
-                
-                if selected_bank == "Monzo":
-                    df = parse_monzo_statement(file_content)
-                elif selected_bank == "Lloyds":
-                    df = parse_lloyds_statement(file_content)
-                elif selected_bank == "Barclays":
-                    df = parse_barclays_statement(file_content)
-                
-                if df is not None:
-                    st.success("✅ Statement parsed successfully!")
-                    
-                    # Display Monzo balance summary if available
-                    if hasattr(df, 'attrs') and df.attrs:
-                        st.subheader("🏦 Monzo Balance Summary")
-                        balance_cols = st.columns(3)
-                        
-                        with balance_cols[0]:
-                            if 'total_balance_including_pots' in df.attrs:
-                                st.metric("Total Balance (Inc. Pots)", f"£{df.attrs['total_balance_including_pots']:,.2f}")
-                            if 'personal_account_balance' in df.attrs:
-                                st.metric("Personal Account Balance", f"£{df.attrs['personal_account_balance']:,.2f}")
-                        
-                        with balance_cols[1]:
-                            if 'balance_in_pots' in df.attrs:
-                                st.metric("Balance in Pots", f"£{df.attrs['balance_in_pots']:,.2f}")
-                            if 'cashback_balance' in df.attrs:
-                                st.metric("Cashback Balance", f"£{df.attrs['cashback_balance']:,.2f}")
-                        
-                        with balance_cols[2]:
-                            if 'total_outgoings' in df.attrs:
-                                st.metric("Total Outgoings", f"£{df.attrs['total_outgoings']:,.2f}")
-                            if 'total_deposits' in df.attrs:
-                                st.metric("Total Deposits", f"£{df.attrs['total_deposits']:,.2f}")
-                    
-                    # Show summary statistics with pot transfer handling
-                    st.subheader("📊 Transaction Summary")
-                    col1, col2, col3, col4, col5, col6 = st.columns(6)
-                    
-                    # Separate pot transfers from regular transactions
-                    pot_transfers = df[df['Category'] == 'Pot Transfer']
-                    regular_transactions = df[df['Category'] != 'Pot Transfer']
-                    
-                    with col1:
-                        total_income = regular_transactions[regular_transactions['Amount'] > 0]['Amount'].sum()
-                        st.metric("Total Income", f"£{total_income:,.2f}")
-                    
-                    with col2:
-                        total_expenses = abs(regular_transactions[regular_transactions['Amount'] < 0]['Amount'].sum())
-                        st.metric("Total Expenses", f"£{total_expenses:,.2f}")
-                    
-                    with col3:
-                        net_savings = total_income - total_expenses
-                        st.metric("Net Savings", f"£{net_savings:,.2f}")
-                    
-                    with col4:
-                        pot_in = pot_transfers[pot_transfers['Amount'] > 0]['Amount'].sum() if not pot_transfers.empty else 0
-                        st.metric("Pot Money In", f"£{pot_in:,.2f}")
-                    
-                    with col5:
-                        pot_out = abs(pot_transfers[pot_transfers['Amount'] < 0]['Amount'].sum() if not pot_transfers.empty else 0)
-                        st.metric("Pot Money Out", f"£{pot_out:,.2f}")
-                    
-                    with col6:
-                        # Calculate balance left (income - expenses, excluding pot transfers)
-                        balance_left = total_income - total_expenses
-                        st.metric("Balance Left", f"£{balance_left:,.2f}")
-                    
-                    # Show pot transfer details if any exist
-                    if not pot_transfers.empty:
-                        st.subheader("🔄 Pot Transfer Transactions")
-                        st.dataframe(pot_transfers, width='stretch')
-                        
-                        # Pot transfer summary
-                        pot_in = pot_transfers[pot_transfers['Amount'] > 0]['Amount'].sum()
-                        pot_out = abs(pot_transfers[pot_transfers['Amount'] < 0]['Amount'].sum())
-                        
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Pot Money In", f"${pot_in:,.2f}")
-                        with col2:
-                            st.metric("Pot Money Out", f"${pot_out:,.2f}")
-                        with col3:
-                            st.metric("Net Pot Movement", f"${pot_in - pot_out:,.2f}")
-                    
-                    # Show transaction preview
-                    st.subheader("📋 Recent Transactions")
-                    st.dataframe(df.head(10), width='stretch')
-                    
-                    # Category breakdown (exclude pot transfers from expenses)
-                    st.subheader("📈 Spending by Category")
-                    expense_df = regular_transactions[regular_transactions['Amount'] < 0]
-                    if not expense_df.empty:
-                        category_summary = expense_df.groupby('Category')['Amount'].sum().abs().sort_values(ascending=False)
-                        
-                        # Create pie chart
-                        fig = px.pie(
-                            values=category_summary.values,
-                            names=category_summary.index,
-                            title="Expense Breakdown (Excluding Pot Transfers)"
-                        )
-                        st.plotly_chart(fig, width='stretch')
-                    
-                    # Transaction count summary
-                    st.subheader("📊 Transaction Summary")
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        regular_count = len(regular_transactions)
-                        st.metric("Regular Transactions", regular_count)
-                    
-                    with col2:
-                        pot_count = len(pot_transfers)
-                        st.metric("Pot Transfer Transactions", pot_count)
-                    
-                    with col3:
-                        total_count = len(df)
-                        st.metric("Total Transactions", total_count)
-                    
-                    # AI Analysis button
-                    if st.button(f"🤖 Analyze with Ollama", type="primary"):
-                        with st.spinner("Analyzing your financial performance with AI..."):
-                            analysis = analyze_financial_performance(df)
-                            
-                            st.subheader("🧠 AI Financial Analysis")
-                            if analysis.startswith("⚠️") or analysis.startswith("❌"):
-                                st.error(analysis)
-                                
-                                # Show basic analysis even if AI fails
-                                st.subheader("📊 Basic Analysis")
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    st.write("**Financial Summary:**")
-                                    st.write(f"- Total Income: £{total_income:,.2f}")
-                                    st.write(f"- Total Expenses: £{total_expenses:,.2f}")
-                                    st.write(f"- Net Savings: £{net_savings:,.2f}")
-                                    st.write(f"- Balance Left: £{balance_left:,.2f}")
-                                    savings_rate = (net_savings/total_income*100) if total_income > 0 else 0
-                                    st.write(f"- Savings Rate: {savings_rate:.1f}%")
-                                    
-                                    st.write("**Pot Transfer Summary:**")
-                                    st.write(f"- Pot Money In: £{pot_in:,.2f}")
-                                    st.write(f"- Pot Money Out: £{pot_out:,.2f}")
-                                    st.write(f"- Net Pot Movement: £{pot_in - pot_out:,.2f}")
-                                
-                                with col2:
-                                    st.write("**Top Spending Categories:**")
-                                    if not expense_df.empty:
-                                        category_summary = expense_df.groupby('Category')['Amount'].sum().abs().sort_values(ascending=False)
-                                        for cat, amount in category_summary.head(3).items():
-                                            st.write(f"- {cat}: £{abs(amount):,.2f}")
-                                
-                                # Basic recommendations
-                                st.subheader("💡 Quick Recommendations")
-                                if net_savings < 0:
-                                    st.warning("⚠️ You're spending more than you earn. Consider reviewing expenses.")
-                                elif net_savings < total_income * 0.1:  # Less than 10% savings
-                                    st.info("💰 Try to increase savings to at least 10% of income.")
-                                else:
-                                    st.success("✅ Good savings rate! Keep tracking expenses.")
-                                    
-                                # Pot transfer insights
-                                if pot_in > 0 or pot_out > 0:
-                                    st.info(f"🔄 You moved £{pot_out:,.2f} out of pots and £{pot_in:,.2f} into pots. Net pot movement: £{pot_in - pot_out:,.2f}")
-                            else:
-                                st.markdown(analysis)
-                                
-                                # Show analysis confidence
-                                st.info("🤖 Analysis powered by Ollama Llama2")
-                            
-                            # Download analysis
-                            analysis_bytes = analysis.encode('utf-8')
-                            st.download_button(
-                                label="📥 Download Analysis",
-                                data=analysis_bytes,
-                                file_name=f"financial_analysis_{selected_bank}_{datetime.datetime.now().strftime('%Y%m%d')}.txt",
-                                mime="text/plain"
-                            )
-                    
-                    # Export processed data
-                    st.subheader("💾 Export Processed Data")
-                    csv = df.to_csv(index=False)
-                    st.download_button(
-                        label="📊 Download CSV",
-                        data=csv,
-                        file_name=f"processed_{selected_bank}_statement.csv",
-                        mime="text/csv"
-                    )
-                    
-                else:
-                    st.error(f"❌ Failed to parse {selected_bank} statement.")
-                    st.info("🔍 **Debugging Info:** Check the terminal/console output for detailed parsing information.")
-                    
-                    # Show file format help
-                    with st.expander("📋 Expected File Format"):
-                        st.markdown(f"""
-                        **{selected_bank} Statement Requirements:**
-                        
-                        **Required Columns (any variation of these names):**
-                        - Date/Transaction Date/Posted Date
-                        - Description/Details/Transaction Description
-                        - Amount/Value/Debit/Credit
-                        
-                        **Supported File Types:**
-                        - CSV (.csv)
-                        - Excel (.xlsx, .xls)
-                        - PDF (limited support)
-                        
-                        **Common Column Name Variations:**
-                        - Date: 'date', 'transaction date', 'posted date'
-                        - Description: 'description', 'details', 'memo', 'notes'
-                        - Amount: 'amount', 'value', 'debit', 'credit'
-                        
-                        **Tips:**
-                        - Ensure your file has headers in the first row
-                        - Check for extra spaces in column names
-                        - Make sure the file is not password protected
-                        """)
-                    
-                    # Show raw file preview
-                    try:
-                        st.subheader("🔍 File Preview")
-                        preview_df = pd.read_csv(StringIO(file_content.decode('utf-8')))
-                        st.write("**Columns found:**", list(preview_df.columns))
-                        st.write("**First 5 rows:**")
-                        st.dataframe(preview_df.head(), use_container_width=True)
-                    except Exception as e:
-                        st.error(f"Could not preview file: {str(e)}")
     
     st.markdown("---")
     st.markdown("### 📱 Features at a Glance")

@@ -10,10 +10,11 @@ It's designed to help you:
 - **Get AI-powered advice** 🤖 - Smart financial recommendations to help you level up your money game
 
 ## 🚀 What It Actually Does
-- **Bank Statement Parser** 🏦: Automatically extracts transactions from Monzo PDF statements **(still being worked on)**
+- **Bank Statement Parser** 🏦: Automatically extracts transactions from Monzo PDF statements *(still being worked on)*
 - **Expense Tracking** 💸: Categorize and monitor where your money's going (spoiler: it's probably food 🍕)
 - **Budget vs Actual** 📈: Compare what you planned to spend vs what you actually spent (oops 😅)
 - **Subscription Manager** 📱: Keep track of all those monthly subscriptions that keep adding up
+- **Debt Management** 💳: Track who you owe, who owes you, upcoming bills, and net debt position
 - **Multi-format Export** 📤: Export to Excel, PDF, or whatever format you prefer
 
 ### Making Things Look Pretty 🎨
@@ -27,6 +28,7 @@ It's designed to help you:
 - **Meal Planning** 🍳: Organize weekly meal schedules and grocery lists
 - **Cleaning Schedule** 🧹: Track household maintenance tasks (because adulting is hard)
 - **Goal Setting** 🎯: Set and monitor personal and financial objectives
+- **Debt Tracking** 💳: Manage who you owe and who owes you, with visual pie charts
 
 ## 🛠️ Tech Stack (The Nerdy Stuff)
 ### Main Technologies 💻
@@ -152,6 +154,13 @@ This project has been through A LOT - we're talking 10 major versions here:
 
 ### Major Debugging Battles ⚔️
 
+#### Excel File Corruption Crisis 📊
+- **The Problem**: Persistent Excel file corruption errors preventing file generation
+- **The Investigation**: Systematic debugging by disabling features one by one
+- **The Root Cause**: Complex Excel generation with advanced formulas and charts
+- **The Solution**: Replaced with simplified, robust Excel template function
+- **The Evidence**: Created `generator_simple.py` and `generator_fixed.py` for testing
+
 #### PDF Parser Development 🏦
 - **The Problem**: Monzo PDF statements are like, super complicated
 - **The Solution**: Developed multiple parsing strategies with regex patterns
@@ -173,6 +182,26 @@ This project has been through A LOT - we're talking 10 major versions here:
 - **Version Control**: Kept all the old versions in `OG/` directory (hoarder much? 😅)
 
 ## 📊 Recent Changes & Cool New Stuff
+
+### Latest Updates (January 2026) 🎉
+- **🔥 Major Bug Fix**: Resolved persistent Excel file corruption issues that were preventing file generation
+- **💳 Debt Tracker Feature**: Added comprehensive debt tracking with visual pie charts
+- **🛠️ Code Refactoring**: Simplified Excel generation function for better stability
+- **📋 Enhanced UI**: Improved user interface with better error handling
+- **🔧 Syntax Fixes**: Fixed indentation and syntax errors in generator.py
+
+### New Debt Tracker Features 💳
+- **Track Who You Owe**: Monitor all your debts and obligations
+- **Track Who Owes You**: Keep track of money owed to you
+- **Visual Pie Charts**: Interactive charts showing debt distribution
+- **Net Debt Position**: Calculate your overall debt position
+- **Priority Management**: Organize debts by priority and due dates
+
+### Technical Improvements 🛠️
+- **Simplified Excel Generation**: Replaced complex Excel generation with robust, simplified version
+- **Error Handling**: Better error messages and debugging information
+- **Code Stability**: Removed problematic code that caused file corruption
+- **Performance**: Faster and more reliable file generation
 
 ### Latest Features (Best Version)
 - **Enhanced UI**: Modern, responsive interface with custom CSS (so pretty! 🌟)
@@ -226,7 +255,9 @@ Personal use project - built for individual financial management and life organi
 ---
 
 **Created by**: Anthony Gathukia (that's me! 👋)
-**Last Updated**: January 2026
-**Version**: 10+ (Best Version)
+**Last Updated**: January 2026 (Latest Debt Update)
+**Version**: 10+ (Best Version with Debt Tracker)
 **Technology**: Python, Streamlit, Excel Integration, AI-Powered Analytics
 **Age**: Born in 2006, currently in my second year of Uni 🎓
+**GitHub**: https://github.com/Maxuimhunter/Finanace-Assistant
+**Recent Changes**: Fixed Excel corruption, added Debt Tracker, improved stability
