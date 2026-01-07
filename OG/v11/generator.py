@@ -34,7 +34,6 @@ import base64
 import io
 from pathlib import Path
 import re
-import ollama
 
 # Set page config
 st.set_page_config(
@@ -1872,6 +1871,7 @@ def create_excel_template(month=None, sections=None):
         'Welcome Guide',
         'Income Tracker',
         'Expense Tracker',
+        'Monthly Purchases',
         'Subscription Tracker',
         'Savings Tracker',
         'Stock Tracker',
@@ -2083,9 +2083,9 @@ def create_excel_template(month=None, sections=None):
             adjusted_width = (max_length + 2) * 1.2
             sheet.column_dimensions[column_letter].width = min(adjusted_width, 30)
     
-    # Create Charts sheet if expenses are included
+    # Create Charts sheet if expenses or monthly_purchases are included
     # Note: create_enhanced_charts function is currently commented out
-    # if 'expenses' in sections:
+    # if 'expenses' in sections or 'monthly_purchases' in sections:
     #     create_enhanced_charts(wb, month)
     
     # Create AI Insights sheet only if it doesn't exist
@@ -2141,8 +2141,6 @@ def read_excel_data_optimized(file_path, selected_categories=None, for_ai_conver
             'Expenses': 'Expense Tracker',
             'Savings': 'Savings Tracker',
             'Investments': 'Stock Tracker',
-            'Debt': 'Debt Tracker',
-            'Subscriptions': 'Subscription Tracker',
             'Health': ['Weight Tracker', 'Habit Tracker'],
             'Lifestyle': ['Cleaning Checklist', 'Meal Planner', 'Time Table']
         }
@@ -2447,30 +2445,23 @@ For each relevant data section, provide:
 - Highlight any overdue or upcoming due dates
 - Analyze debt-to-income ratio implications
 
-### 3. Subscription Analysis (if subscription data available)
-- Calculate total monthly and annual subscription costs
-- Identify unused or redundant subscriptions that can be cancelled
-- Analyze subscription categories and spending patterns
-- Suggest subscription optimization opportunities
-- Compare subscription costs to overall budget
-
-### 4. Spending Analysis
+### 3. Spending Analysis
 - Identify any unusual or outlier transactions
 - Highlight any recurring subscriptions or expenses that could be reduced
 - Compare spending against common budgeting guidelines (e.g., 50/30/20 rule)
 
-### 5. Income & Budget Optimization
+### 4. Income & Budget Optimization
 - Analyze income stability and sources
 - Suggest potential areas for expense reduction
 - Recommend budget allocation improvements considering debt obligations
 
-### 6. Savings & Investments
+### 5. Savings & Investments
 - Evaluate current savings rate
 - Assess investment diversification (if data available)
 - Suggest potential savings goals based on income/expense patterns
 - Recommend how to balance debt repayment with savings goals
 
-### 7. Lifestyle & Health (if data available)
+### 6. Lifestyle & Health (if data available)
 - Analyze any health metrics for trends
 - Correlate lifestyle choices with financial patterns
 - Suggest holistic improvements that benefit both health and finances
@@ -3155,30 +3146,31 @@ def main():
         selected_month = st.selectbox("Select Month", months, index=datetime.date.today().month - 1)
         
         # Section selection
-        st.subheader("📋 Select Sections to Include")
+        st.subheader("Select Sections to Include")
         
         # Create columns for better organization
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("**💰 Financial**")
-            income = st.checkbox("💵 Income", value=True, key="income_cb")
-            expenses = st.checkbox("💸 Expenses", value=True, key="expenses_cb")
+            st.markdown("**Financial**")
+            income = st.checkbox("Income", value=True, key="income_cb")
+            expenses = st.checkbox("Expenses", value=True, key="expenses_cb")
+            monthly_purchases = st.checkbox("Monthly Purchases", value=True, key="monthly_purchases_cb")
             subscriptions = st.checkbox("🔄 Subscription Tracker", value=True, key="subscriptions_cb")
-            savings = st.checkbox("💎 Savings", value=True, key="savings_cb")
+            savings = st.checkbox("Savings", value=True, key="savings_cb")
             stocks = st.checkbox("📊 Stock Tracker", value=True, key="stocks_cb")
             debt = st.checkbox("💳 Debt Tracker", value=True, key="debt_cb")
         
         with col2:
-            st.markdown("**🏋️ Health**")
-            weight = st.checkbox("⚖️ Weight", value=True, key="weight_cb")
-            habits = st.checkbox("✅ Habits", value=True, key="habits_cb")
+            st.markdown("**Health**")
+            weight = st.checkbox("Weight", value=True, key="weight_cb")
+            habits = st.checkbox("Habits", value=True, key="habits_cb")
         
         with col3:
-            st.markdown("**🏠 Life Organization**")
-            cleaning = st.checkbox("🧹 Cleaning", value=True, key="cleaning_cb")
-            meals = st.checkbox("🍽️ Meal Planning", value=True, key="meals_cb")
-            timetable = st.checkbox("📅 Time Table", value=True, key="timetable_cb")
+            st.markdown("**Life Organization**")
+            cleaning = st.checkbox("Cleaning", value=True, key="cleaning_cb")
+            meals = st.checkbox("Meal Planning", value=True, key="meals_cb")
+            timetable = st.checkbox("Time Table", value=True, key="timetable_cb")
         
         st.markdown("---")
 
@@ -3186,6 +3178,7 @@ def main():
         selected_sections = []
         if income: selected_sections.append("income")
         if expenses: selected_sections.append("expenses")
+        if monthly_purchases: selected_sections.append("monthly_purchases")
         if subscriptions: selected_sections.append("subscriptions")
         if savings: selected_sections.append("savings")
         if stocks: selected_sections.append("stocks")
@@ -3199,7 +3192,7 @@ def main():
         # If no sections are selected, include all
         if not selected_sections:
             selected_sections = [
-                'income', 'expenses', 'subscriptions', 'savings', 'stocks', 
+                'income', 'expenses', 'monthly_purchases', 'subscriptions', 'savings', 'stocks', 
                 'debt', 'weight', 'habits', 'cleaning', 'meals', 'timetable'
             ]
 
@@ -3230,6 +3223,25 @@ def main():
                     
                     # Debug: Print the sheets that were created
                     st.sidebar.write("Sheets created:", wb.sheetnames)
+                    
+                    # Add Monthly Purchases sheet if expenses are included
+                    if 'Expense Tracker' in wb.sheetnames and 'Monthly Purchases' not in wb.sheetnames and monthly_purchases:
+                        monthly_purchases_sheet = wb.create_sheet("Monthly Purchases")
+                        monthly_purchases_sheet.append(["Date", "Item", "Amount", "Type", "Category", "Notes"])
+                        
+                        # Add sample data
+                        sample_data = [
+                            [datetime.date.today().replace(day=1), "Netflix", 15.99, "Subscription", "Entertainment", "Monthly plan"],
+                            [datetime.date.today().replace(day=5), "Gym Membership", 45.00, "Subscription", "Health", "Monthly membership"],
+                            [datetime.date.today().replace(day=10), "Office Chair", 199.99, "One-Time", "Furniture", "Ergonomic chair"]
+                        ]
+                        for row in sample_data:
+                            monthly_purchases_sheet.append(row)
+                            
+                        # Style the header
+                        for cell in monthly_purchases_sheet[1]:
+                            cell.font = Font(bold=True)
+                            cell.fill = PatternFill(start_color="D8BFD8", end_color="D8BFD8", fill_type="solid")
                     
                 except Exception as e:
                     st.error(f"Error creating Excel template: {str(e)}")
@@ -3358,7 +3370,6 @@ def main():
             'Savings',
             'Investments',
             'Debt',
-            'Subscriptions',
             'Health',
             'Lifestyle'
         ]
