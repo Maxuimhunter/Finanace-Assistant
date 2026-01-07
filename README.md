@@ -13,7 +13,7 @@ It's designed to help you:
 - **Bank Statement Parser** 🏦: Automatically extracts transactions from Monzo PDF statements *(still being worked on)*
 - **Expense Tracking** 💸: Categorize and monitor where your money's going (spoiler: it's probably food 🍕)
 - **Budget vs Actual** 📈: Compare what you planned to spend vs what you actually spent (oops 😅)
-- **Subscription Manager** 📱: Keep track of all those monthly subscriptions that keep adding up
+- **Subscription Tracker** 🔄: Dedicated subscription management with billing cycles and auto-renewal tracking
 - **Debt Management** 💳: Track who you owe, who owes you, upcoming bills, and net debt position
 - **Multi-format Export** 📤: Export to Excel, PDF, or whatever format you prefer
 
@@ -29,6 +29,7 @@ It's designed to help you:
 - **Cleaning Schedule** 🧹: Track household maintenance tasks (because adulting is hard)
 - **Goal Setting** 🎯: Set and monitor personal and financial objectives
 - **Debt Tracking** 💳: Manage who you owe and who owes you, with visual pie charts
+- **Subscription Optimization** 🔄: Track all recurring payments and identify cost-saving opportunities
 
 ## 🛠️ Tech Stack (The Nerdy Stuff)
 ### Main Technologies 💻
@@ -62,7 +63,7 @@ Finance Budget Script/Test Site/
 ├── Monzo_bank_statement_*.pdf  # Sample bank statements
 ├── Best Version/               # Latest stable version
 ├── OG/                         # Original versions archive
-│   ├── v2/ through v10/       # Version history (10 iterations)
+│   ├── v2/ through v11/       # Version history (11 iterations)
 │   ├── Best/                  # Best previous version
 │   └── backup/                # Backup versions
 ├── Temp/                       # Temporary test files
@@ -113,13 +114,19 @@ Finance Budget Script/Test Site/
 2. **Generate Excel Reports** 📊:
    - Create awesome Excel workbooks with multiple sheets
    - Includes charts, summaries, and detailed transaction logs
+   - **NEW**: Select from enhanced sections including Debt Tracker and Subscription Tracker
 
 3. **Check Out Your Dashboard** 💰:
    - Interactive charts showing where your money's going
    - Key metrics and financial health indicators
    - Budget vs actual comparisons (prepare for surprises 😅)
 
-4. **Export Your Stuff** 📤:
+4. **Get AI Insights** 🤖:
+   - Upload your filled Excel file for AI-powered analysis
+   - Get personalized recommendations for debt management and subscription optimization
+   - **NEW**: Dedicated analysis for Debt Tracker and Subscription Tracker data
+
+5. **Export Your Stuff** 📤:
    - Generate PDF reports with financial insights
    - Download Excel files for offline analysis
 
@@ -141,16 +148,168 @@ Finance Budget Script/Test Site/
 1. **Data Analysis**: Analyzes your spending patterns and financial trends
 2. **Recommendation Engine**: Gives you personalized financial advice
 3. **Report Generation**: Creates narrative insights based on your data
+4. **NEW**: Debt and Subscription analysis with optimization recommendations
+
+## 📋 Complete Update History & Changelog
+
+### Version 11+ (January 2026) - The Subscription & Debt Era 🔄💳
+
+#### 🆕 Major New Features
+- **🔄 Subscription Tracker**: Dedicated sheet for managing recurring subscriptions
+  - Track service names, amounts, billing cycles, next payment dates
+  - Auto-renewal tracking and status management
+  - Category-based organization (Entertainment, Music, Software, etc.)
+  - AI-powered subscription optimization recommendations
+- **💳 Debt Tracker**: Comprehensive debt management system
+  - Track who you owe and who owes you
+  - Priority management and due date tracking
+  - Net debt position calculations
+  - Visual debt distribution analysis
+
+#### 🎨 UI/UX Enhancements
+- **📋 Enhanced Section Selection**: Added emojis to all section checkboxes for better visual appeal
+  - 💰 Financial section with money emojis
+  - 🏋️ Health section with fitness emojis  
+  - 🏠 Life Organization section with home emojis
+- **🔄 Improved Organization**: Removed redundant "Monthly Purchases" sheet
+- **📊 Better Sheet Ordering**: Logical flow of sheets in generated Excel files
+
+#### 🤖 AI Integration Improvements
+- **🧠 Enhanced AI Categories**: Added "Debt" and "Subscriptions" to AI analysis options
+- **📈 Expanded AI Prompts**: Dedicated analysis sections for debt and subscription optimization
+- **🔍 Smarter Insights**: AI can now provide specific recommendations for:
+  - Debt repayment strategies (avalanche vs snowball method)
+  - Subscription cost optimization and cancellation opportunities
+  - Budget allocation considering debt obligations
+
+#### 🔧 Technical Improvements
+- **🐛 Bug Fixes**: Resolved "monthly_purchases is not defined" error
+- **📦 Import Fixes**: Added missing ollama import for AI functionality
+- **🔄 Sheet Processing**: Enhanced sheet creation and mapping logic
+- **⚡ Performance**: Optimized Excel template generation
+
+### Version 10 (Late 2025) - The Debt Revolution 💳
+
+#### 🆕 Major New Features
+- **💳 Debt Tracker Feature**: Complete debt management system
+  - Track who you owe and who owes you
+  - Visual pie charts for debt distribution
+  - Priority management and due date tracking
+  - Net debt position calculations
+
+#### 🔧 Technical Improvements
+- **🛠️ Code Refactoring**: Simplified Excel generation function for better stability
+- **📋 Enhanced UI**: Improved user interface with better error handling
+- **🔧 Syntax Fixes**: Fixed indentation and syntax errors in generator.py
+- **🐛 Major Bug Fix**: Resolved persistent Excel file corruption issues
+
+### Version 9 (Mid 2025) - AI Magic Era 🤖
+
+#### 🆕 Major New Features
+- **🤖 AI Integration**: Ollama-powered financial insights and recommendations
+- **📊 Advanced Analytics**: Machine learning-powered spending pattern analysis
+- **📈 Enhanced Charts**: 3D charts, enhanced styling, and interactive elements
+- **📄 PDF Reports**: Professional report generation with custom layouts
+
+#### 🔧 Technical Improvements
+- **🏦 Bank Statement Automation**: Improved Monzo PDF parsing accuracy
+- **⚡ Performance**: Faster processing and better memory management
+- **📱 Mobile Responsive**: Works on your phone too!
+
+### Version 8 (Early 2025) - The PDF Struggles 📄
+
+#### 🆕 Major New Features
+- **🏦 Bank Statement Processing**: Monzo PDF statement parsing capabilities
+- **📊 Enhanced Charts**: Better visual representations of financial data
+- **🔍 Debug Tools**: Comprehensive debugging utilities for PDF parsing
+
+#### 🔧 Technical Improvements
+- **📋 Data Pipeline**: Robust data cleaning and validation processes
+- **🧪 Testing**: Multiple test files and validation tools
+- **🔄 Error Handling**: Better error recovery and user feedback
+
+### Version 7 (Late 2024) - Chart Generation Era 📊
+
+#### 🆕 Major New Features
+- **📊 Excel Chart Integration**: Professional-looking financial dashboards
+- **🎨 Visual Enhancements**: Custom formatting and styling options
+- **📈 Multiple Chart Types**: Line, pie, and bar charts for different data views
+
+#### 🔧 Technical Improvements
+- **📦 openpyxl Integration**: Advanced Excel manipulation capabilities
+- **🎯 Data Visualization**: Better ways to see where your money goes
+
+### Version 6 (Mid 2024) - Excel Wizardry 📈
+
+#### 🆕 Major New Features
+- **📊 Excel Template Generation**: Automated Excel workbook creation
+- **📋 Multiple Sheets**: Organized data across different tabs
+- **🎨 Professional Formatting**: Colors, fonts, and styling
+
+#### 🔧 Technical Improvements
+- **📦 openpyxl Library**: Advanced Excel file manipulation
+- **🔄 Template System**: Reusable Excel templates
+
+### Version 5 (Early 2024) - The Organization Era 📅
+
+#### 🆕 Major New Features
+- **📅 Life Organization**: Meal planning, cleaning schedules, habit tracking
+- **✅ Habit Tracker**: Daily habit monitoring and goal setting
+- **🍳 Meal Planning**: Weekly meal schedules and grocery lists
+- **🧹 Cleaning Schedule**: Household maintenance task tracking
+
+#### 🔧 Technical Improvements
+- **📋 Expanded Scope**: Beyond just finances to full life management
+- **🎯 Goal Setting**: Personal and financial objective tracking
+
+### Version 4 (Late 2023) - Enhanced Analytics 📈
+
+#### 🆕 Major New Features
+- **📊 Budget vs Actual**: Compare planned vs actual spending
+- **💰 Savings Tracking**: Monitor savings goals and progress
+- **📈 Investment Tracking**: Stock portfolio management
+- **🎯 Financial Goals**: Set and track financial objectives
+
+#### 🔧 Technical Improvements
+- **📊 Data Analysis**: Better financial insights and metrics
+- **💡 Recommendations**: Personalized financial advice
+
+### Version 3 (Mid 2023) - The Baby Days 🍼
+
+#### 🆕 Major New Features
+- **💸 Expense Tracking**: Basic expense categorization and monitoring
+- **📊 Simple Charts**: Basic visual representations of spending
+- **📋 Categories**: Automatic transaction categorization
+- **💰 Income Tracking**: Monitor multiple income sources
+
+#### 🔧 Technical Improvements
+- **📊 pandas Integration**: Better data manipulation
+- **🎨 Basic UI**: Simple Streamlit interface
+
+### Version 2 (Early 2023) - The Beginning 🌱
+
+#### 🆕 Major New Features
+- **🏦 Basic Bank Statement Parsing**: Simple PDF text extraction
+- **💸 Manual Expense Entry**: Basic expense tracking functionality
+- **📊 Simple Dashboard**: Basic financial overview
+- **📋 Data Export**: Export data to CSV format
+
+#### 🔧 Technical Improvements
+- **📦 Basic Libraries**: Initial Streamlit and pandas setup
+- **🔧 Foundation**: Core application structure
+
+### Version 1 (Late 2022) - The Concept 💡
+
+#### 🆕 Initial Features
+- **📝 Basic Idea**: Concept for personal finance management
+- **🎯 Planning**: Initial design and feature planning
+- **📦 Setup**: Project structure and basic setup
+
+#### 🔧 Technical Foundation
+- **🐍 Python**: Decision to use Python for development
+- **🌐 Web App**: Decision to use Streamlit for interface
 
 ## 🐛 Debug History & My Development Journey
-
-### Version Evolution (Like, 10 Major Updates!)
-This project has been through A LOT - we're talking 10 major versions here:
-
-- **v1-v3**: The baby days 🍼 - Basic Streamlit interface with simple expense tracking
-- **v4-v6**: Getting fancy ✨ - Enhanced Excel integration and chart generation
-- **v7-v8**: PDF struggles 📄 - PDF parsing capabilities and bank statement processing
-- **v9-v10**: AI magic 🤖 - AI integration, advanced analytics, and professional UI
 
 ### Major Debugging Battles ⚔️
 
@@ -176,71 +335,59 @@ This project has been through A LOT - we're talking 10 major versions here:
 - **The Solution**: Robust data cleaning and validation processes
 - **The Feature**: Automatic categorization and error handling (finally!)
 
+#### Monthly Purchases Removal 🗑️
+- **The Problem**: Redundant "Monthly Purchases" sheet causing confusion
+- **The Solution**: Removed the sheet and enhanced Subscription Tracker
+- **The Result**: Cleaner, more focused interface
+
+#### Ollama Integration Issues 🤖
+- **The Problem**: Missing ollama import causing AI features to fail
+- **The Solution**: Added proper import and category mapping
+- **The Result**: Working AI insights for all data types
+
 ### Testing & Validation 🧪
 - **Debug Tools**: Comprehensive debugging utilities for PDF parsing
 - **Test Files**: Like, a million test Excel files for validation
 - **Version Control**: Kept all the old versions in `OG/` directory (hoarder much? 😅)
 
-## 📊 Recent Changes & Cool New Stuff
+## 📊 Latest Features (Current Version)
 
-### Latest Updates (January 2026) 🎉
-- **🔥 Major Bug Fix**: Resolved persistent Excel file corruption issues that were preventing file generation
-- **💳 Debt Tracker Feature**: Added comprehensive debt tracking with visual pie charts
-- **🛠️ Code Refactoring**: Simplified Excel generation function for better stability
-- **📋 Enhanced UI**: Improved user interface with better error handling
-- **🔧 Syntax Fixes**: Fixed indentation and syntax errors in generator.py
+### 🆕 New in Version 11+ (January 2026)
+- **🔄 Subscription Tracker**: Complete subscription management with billing cycles
+- **💳 Enhanced Debt Tracker**: Improved debt management with AI insights
+- **📋 Emoji UI**: Visual section selection with intuitive emojis
+- **🤖 Expanded AI Analysis**: Dedicated debt and subscription optimization
+- **🔧 Bug Fixes**: Resolved all major stability issues
 
-### New Debt Tracker Features 💳
-- **Track Who You Owe**: Monitor all your debts and obligations
-- **Track Who Owes You**: Keep track of money owed to you
-- **Visual Pie Charts**: Interactive charts showing debt distribution
-- **Net Debt Position**: Calculate your overall debt position
-- **Priority Management**: Organize debts by priority and due dates
-
-### Technical Improvements 🛠️
-- **Simplified Excel Generation**: Replaced complex Excel generation with robust, simplified version
-- **Error Handling**: Better error messages and debugging information
-- **Code Stability**: Removed problematic code that caused file corruption
-- **Performance**: Faster and more reliable file generation
-
-### Latest Features (Best Version)
-- **Enhanced UI**: Modern, responsive interface with custom CSS (so pretty! 🌟)
-- **AI Integration**: Ollama-powered financial insights and recommendations
-- **Advanced Charts**: 3D charts, enhanced styling, and interactive elements
-- **PDF Reports**: Professional report generation with custom layouts
-- **Bank Statement Automation**: Improved Monzo PDF parsing accuracy
-
-### Performance Improvements ⚡
-- **Faster Processing**: Optimized PDF parsing algorithms
-- **Better Memory Management**: Efficient data handling for large datasets
-- **Enhanced Error Handling**: Robust error recovery and user feedback
-
-### User Experience Enhancements ✨
-- **Intuitive Navigation**: Clear section organization and flow
-- **Visual Feedback**: Progress indicators and status messages
-- **Mobile Responsive**: Works on your phone too! 📱
+### 🎨 User Experience Enhancements
+- **📱 Mobile Responsive**: Works perfectly on all devices
+- **🎯 Intuitive Navigation**: Clear section organization with visual cues
+- **⚡ Fast Performance**: Optimized for speed and reliability
+- **🔍 Smart Defaults**: Intelligent default selections for new users
 
 ## 🔮 What's Next? (Future Plans)
 
 ### Planned Features 🚀
-- **Multi-Bank Support**: Support for other bank statement formats (not just Monzo!)
-- **Advanced Analytics**: Machine learning for spending predictions (crystal ball stuff 🔮)
-- **Mobile App**: Native mobile application (because why not? 📱)
-- **Cloud Integration**: Sync data across devices
-- **Budget Templates**: Pre-built budget templates for different lifestyles
+- **🏦 Multi-Bank Support**: Support for other bank statement formats (not just Monzo!)
+- **🔮 Advanced Analytics**: Machine learning for spending predictions
+- **📱 Mobile App**: Native mobile application
+- **☁️ Cloud Integration**: Sync data across devices
+- **📋 Budget Templates**: Pre-built budget templates for different lifestyles
 
 ### Technical Improvements 🛠️
-- **Database Integration**: Persistent data storage
-- **API Development**: RESTful API for third-party integrations
-- **Security Enhancements**: User authentication and data encryption
-- **Performance Optimization**: Faster processing and real-time updates
+- **🗄️ Database Integration**: Persistent data storage
+- **🔌 API Development**: RESTful API for third-party integrations
+- **🔒 Security Enhancements**: User authentication and data encryption
+- **⚡ Performance Optimization**: Real-time updates and faster processing
 
 ## 📝 Pro Tips
 
 1. **Regular Updates**: Update your financial data weekly for best insights
-2. **Categorization**: Review and adjust automatic categorizations (AI isn't perfect 🤷‍♂️)
-3. **Goal Setting**: Set realistic financial goals and track progress
-4. **Report Review**: Monthly review of generated reports and insights
+2. **📊 Categorization**: Review and adjust automatic categorizations (AI isn't perfect 🤷‍♂️)
+3. **🎯 Goal Setting**: Set realistic financial goals and track progress
+4. **📈 Report Review**: Monthly review of generated reports and insights
+5. **🔄 Subscription Audit**: Quarterly review of subscriptions for optimization opportunities
+6. **💳 Debt Management**: Regular review of debt priorities and repayment strategies
 
 ## 🤝 Contributing
 
@@ -255,9 +402,9 @@ Personal use project - built for individual financial management and life organi
 ---
 
 **Created by**: Anthony Gathukia (that's me! 👋)
-**Last Updated**: January 2026 (Latest Debt Update)
-**Version**: 10+ (Best Version with Debt Tracker)
+**Last Updated**: January 2026 (Subscription & Debt Update)
+**Version**: 11+ (Enhanced with Subscription Tracker & Improved Debt Management)
 **Technology**: Python, Streamlit, Excel Integration, AI-Powered Analytics
 **Age**: Born in 2006, currently in my second year of Uni 🎓
 **GitHub**: https://github.com/Maxuimhunter/Finanace-Assistant
-**Recent Changes**: Fixed Excel corruption, added Debt Tracker, improved stability
+**Recent Changes**: Added Subscription Tracker, enhanced Debt Management, improved AI integration, fixed all major bugs
