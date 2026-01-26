@@ -2293,7 +2293,8 @@ def convert_to_ai_friendly(input_file, output_file):
             "2. Ensured consistent data types in columns",
             "3. Standardized date formats",
             "4. Added clear headers",
-            "5. Removed empty rows and columns"
+            "5. Removed empty rows and columns",
+            "6. Optimized for AI analysis of Subscription and Debt data"
         ]
         
         for i, instruction in enumerate(instructions, start=3):
@@ -2357,7 +2358,7 @@ def convert_to_ai_friendly(input_file, output_file):
         
         # Add version and schema information
         ws_meta['A2'] = "Data Schema Version"
-        ws_meta['B2'] = "1.1"  # Bump version for Monthly Purchases addition
+        ws_meta['B2'] = "1.2"  # Bump version for Subscription Tracker and Debt Tracker addition
         ws_meta['A2'].font = Font(bold=True)
         
         meta_data = [
@@ -2365,13 +2366,25 @@ def convert_to_ai_friendly(input_file, output_file):
             ("Converted on:", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
             ("Conversion notes:", "This file has been optimized for AI analysis."),
             ("", ""),
-            ("Monthly Purchases Schema:", ""),
-            ("- Date:", "Date of the purchase"),
-            ("- Item:", "Name of the item or service"),
-            ("- Amount:", "Cost of the purchase"),
-            ("- Type:", "Subscription or One-Time"),
-            ("- Category:", "Category of the purchase"),
-            ("- Notes:", "Additional details about the purchase")
+            ("Subscription Tracker Schema:", ""),
+            ("- Service:", "Name of the subscription service"),
+            ("- Amount:", "Cost of the subscription"),
+            ("- Billing Cycle:", "Monthly, Yearly, etc."),
+            ("- Next Payment:", "Date of next payment"),
+            ("- Status:", "Active, Cancelled, etc."),
+            ("- Category:", "Entertainment, Software, etc."),
+            ("- Auto-Renewal:", "Yes or No"),
+            ("- Notes:", "Additional details"),
+            ("", ""),
+            ("Debt Tracker Schema:", ""),
+            ("- Person/Company:", "Name of person or company"),
+            ("- Type:", "Owed or Owe Me"),
+            ("- Amount Owed:", "Amount you owe"),
+            ("- Amount Owe Me:", "Amount owed to you"),
+            ("- Due Date:", "Payment due date"),
+            ("- Status:", "Current status"),
+            ("- Priority:", "High, Medium, Low"),
+            ("- Notes:", "Additional details")
         ]
         
         for i, (label, value) in enumerate(meta_data, start=3):
@@ -2386,13 +2399,106 @@ def convert_to_ai_friendly(input_file, output_file):
     except Exception as e:
         return False, f"Error during conversion: {str(e)}"
 
-def generate_ai_insights(file_path, selected_categories=None):
+def generate_follow_up_response(question, context):
+    """
+    Generate a follow-up response based on the user's question and conversation context.
+    
+    Args:
+        question (str): The user's follow-up question
+        context (dict): Conversation context containing original insights, data, and history
+        
+    Returns:
+        str: AI-generated follow-up response
+    """
+    try:
+        # Prepare the conversation context for the AI
+        conversation_history = context.get('conversation_history', [])
+        original_insights = context.get('original_insights', '')
+        excel_data = context.get('excel_data', '')
+        categories = context.get('categories', [])
+        
+        # Build recent conversation context (last 3 exchanges)
+        recent_context = ""
+        if conversation_history:
+            recent_exchanges = conversation_history[-3:]
+            recent_context = "\n\nRecent conversation:\n"
+            for exchange in recent_exchanges:
+                recent_context += f"User: {exchange['question']}\nAI: {exchange['response'][:200]}...\n\n"
+        
+        # Create a specialized prompt for follow-up questions
+        follow_up_prompt = f"""
+# Financial & Lifestyle Insights Follow-up
+
+You are a helpful financial and lifestyle advisor having a conversation with a user about their personalized insights report.
+
+## Original Report Summary:
+{original_insights[:1500]}...
+
+## User's Data Categories:
+{', '.join(categories)}
+
+## Recent Conversation Context:
+{recent_context}
+
+## User's Current Question:
+{question}
+
+## Instructions:
+1. Provide a helpful, conversational response to their specific question
+2. Reference their actual data when relevant (from the original insights)
+3. Give actionable, personalized advice
+4. Be encouraging and supportive
+5. If asking about specific numbers, acknowledge that you're working with their actual data
+6. Keep responses concise but comprehensive (2-4 paragraphs)
+7. Use emojis to make it friendly and engaging
+
+Respond directly to their question as if you're continuing a conversation about their financial and lifestyle report.
+"""
+        
+        # Generate response using Ollama
+        response = ollama.chat(
+            model='llama2',  # You can change this to your preferred model
+            messages=[
+                {
+                    'role': 'system',
+                    'content': 'You are a helpful financial and lifestyle advisor providing personalized insights based on the user\'s actual data.'
+                },
+                {
+                    'role': 'user',
+                    'content': follow_up_prompt
+                }
+            ]
+        )
+        
+        return response['message']['content']
+        
+    except Exception as e:
+        # Fallback response if AI fails
+        return f"""
+🤖 **AI Response:**
+
+I apologize, but I'm having trouble processing your question right now. However, I can still help!
+
+Based on your original report, here are some general insights:
+
+• **For financial questions:** Look at your expense categories in the original report to identify areas where you can cut back
+• **For subscription questions:** Review your Subscription Tracker sheet to see which services cost the most
+• **For debt questions:** Prioritize high-interest debt first and consider the avalanche or snowball method
+• **For lifestyle questions:** Your habit and meal planning data can help identify areas for improvement
+
+Please try rephrasing your question or upload your data again for a fresh analysis!
+
+*Error details: {str(e)}*
+"""
+
+def generate_ai_insights(file_path, selected_categories=None, user_questions=None):
     """
     Generate AI insights from the uploaded Excel file using Ollama.
     
     Args:
         file_path (str): Path to the Excel file
         selected_categories (list): List of categories to analyze
+        user_questions (list): List of user questions to answer in the report
         
     Returns:
         tuple: (excel_data_str, insights) - The data string and AI-generated insights
@@ -2475,6 +2581,29 @@ For each relevant data section, provide:
 - Correlate lifestyle choices with financial patterns
 - Suggest holistic improvements that benefit both health and finances
 
+### 8. User Questions (if provided)
+"""
+        
+        # Add user questions to the prompt if provided
+        if user_questions and len(user_questions) > 0:
+            prompt += f"""
+The user has specifically asked the following questions. Please address each question in detail in a dedicated section of your report:
+
+User Questions:
+"""
+            for i, question in enumerate(user_questions, 1):
+                prompt += f"{i}. {question}\n"
+            
+            prompt += """
+Please provide detailed, personalized answers to these questions based on the user's actual data. Include specific recommendations and actionable advice for each question.
+"""
+        else:
+            prompt += """
+No specific user questions were provided.
+"""
+        
+        prompt += f"""
+
 ## Required Output Format
 
 # Financial & Lifestyle Insights Report
@@ -2506,6 +2635,18 @@ For each relevant data section, provide:
 1. Week 1: [Specific task]
 2. Week 2: [Specific task]
 3. Week 3-4: [Specific tasks]
+
+### 💬 Your Questions Answered
+"""
+        
+        # Add user questions section to output format if provided
+        if user_questions and len(user_questions) > 0:
+            for i, question in enumerate(user_questions, 1):
+                prompt += f"\n#### Q{i}: {question}\n[Detailed answer based on user's actual data with specific recommendations]\n\n"
+        else:
+            prompt += "\nNo specific questions were provided.\n"
+        
+        prompt += """
 
 Note: Be specific with numbers and percentages where possible. Use emojis for better readability. Keep the tone positive and encouraging while being direct about areas needing improvement."""
         
@@ -3332,6 +3473,7 @@ def main():
                         - 🏷️ Added clear headers
                         - 🗑️ Removed empty rows and columns
                         - 📝 Added metadata and instructions
+                        - 🔄 Optimized for Subscription and Debt Tracker analysis
                         """)
                     else:
                         st.error(f"Error during conversion: {message}")
@@ -3371,7 +3513,56 @@ def main():
         
         uploaded_file = st.file_uploader("Upload your filled Excel file", type=["xlsx"])
         
+        # Add the Ask Follow-up Questions section right after file upload
         if uploaded_file is not None:
+            st.markdown("---")
+            st.markdown("### 💬 Ask Follow-up Questions")
+            st.write("Add any specific questions you'd like answered in your report. The AI will address these in a dedicated section.")
+            
+            # Custom question input
+            custom_question = st.text_area(
+                "Enter your custom questions (one per line):",
+                placeholder="e.g.,\nHow can I save an extra £200 per month?\nWhat are my biggest subscription costs?\nShould I prioritize debt repayment or savings?",
+                key="custom_questions_input",
+                height=120
+            )
+            
+            # Quick questions as checkboxes
+            st.markdown("**Quick Questions (select all that apply):**")
+            quick_questions = [
+                "💰 How can I save more money?",
+                "📊 What are my biggest expenses?",
+                "🔄 Which subscriptions should I cancel?",
+                "💳 How should I prioritize my debt?",
+                "📈 Am I on track with my financial goals?",
+                "🍳 How can I reduce my food costs?",
+                "🏋️ What health improvements can I make?",
+                "📅 How can I better organize my time?"
+            ]
+            
+            selected_quick_questions = []
+            # Create 2 columns for checkboxes
+            q_cols = st.columns(2)
+            for i, question in enumerate(quick_questions):
+                with q_cols[i % 2]:
+                    if st.checkbox(question, key=f"quick_q_{i}"):
+                        selected_quick_questions.append(question)
+            
+            # Combine all questions
+            all_questions = []
+            if custom_question.strip():
+                # Split custom questions by line and remove empty lines
+                custom_questions_list = [q.strip() for q in custom_question.split('\n') if q.strip()]
+                all_questions.extend(custom_questions_list)
+            all_questions.extend(selected_quick_questions)
+            
+            if all_questions:
+                st.success(f"✅ {len(all_questions)} question(s) will be answered in your report!")
+            else:
+                st.info("💡 Add questions above to get personalized answers in your report")
+            
+            st.markdown("---")
+            
             if st.button("🤖 Generate AI Insights", key="ai_insights_btn"):
                 with st.spinner("Analyzing your data with AI..."):
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
@@ -3379,7 +3570,7 @@ def main():
                         tmp_path = tmp.name
                     
                     try:
-                        excel_data_str, insights = generate_ai_insights(tmp_path, selected_categories)
+                        excel_data_str, insights = generate_ai_insights(tmp_path, selected_categories, all_questions)
                         
                         # --- DEBUG: Show the data sent to the AI --- #
                         with st.expander("View Data Sent to AI (for debugging)"):
@@ -3412,6 +3603,9 @@ def main():
                                         mime="application/pdf"
                                     )
                                 os.unlink(pdf_path)
+                            
+                            # Note about questions
+                            st.info("💡 Your questions have been answered in the 'Your Questions Answered' section of the report above!")
                         else:
                             st.error(insights)
                     finally:
