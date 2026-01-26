@@ -125,6 +125,9 @@ Finance Budget Script/Test Site/
    - Upload your filled Excel file for AI-powered analysis
    - Get personalized recommendations for debt management and subscription optimization
    - **NEW**: Dedicated analysis for Debt Tracker and Subscription Tracker data
+   - **NEW**: Ask custom questions before generating your report
+   - **NEW**: Select multiple quick questions for comprehensive analysis
+   - **NEW**: Get all your questions answered in a dedicated report section
 
 5. **Export Your Stuff** 📤:
    - Generate PDF reports with financial insights
@@ -149,6 +152,11 @@ Finance Budget Script/Test Site/
 2. **Recommendation Engine**: Gives you personalized financial advice
 3. **Report Generation**: Creates narrative insights based on your data
 4. **NEW**: Debt and Subscription analysis with optimization recommendations
+5. **NEW**: Interactive Question System:
+   - Custom question input for personalized inquiries
+   - Multi-select quick questions for comprehensive analysis
+   - Dedicated "Your Questions Answered" section in reports
+   - AI responses based on your actual financial data
 
 ## 📋 Complete Update History & Changelog
 
@@ -165,6 +173,12 @@ Finance Budget Script/Test Site/
   - Priority management and due date tracking
   - Net debt position calculations
   - Visual debt distribution analysis
+- **💬 Enhanced Question System**: Revolutionary AI interaction features
+  - **Custom Questions**: Text area for multiple personalized questions (one per line)
+  - **Multi-Select Quick Questions**: Checkboxes for selecting multiple predefined questions
+  - **Smart Question Integration**: Questions are included in AI analysis prompt
+  - **Dedicated Report Section**: "Your Questions Answered" section with personalized responses
+  - **Improved UX**: Questions moved to top, right after file upload for better workflow
 
 #### 🎨 UI/UX Enhancements
 - **📋 Enhanced Section Selection**: Added emojis to all section checkboxes for better visual appeal
@@ -181,6 +195,11 @@ Finance Budget Script/Test Site/
   - Debt repayment strategies (avalanche vs snowball method)
   - Subscription cost optimization and cancellation opportunities
   - Budget allocation considering debt obligations
+- **💬 Revolutionary Question System**: 
+  - Questions are processed and integrated into the AI analysis prompt
+  - AI provides detailed, personalized answers based on actual user data
+  - Multiple questions can be asked and answered in a single report
+  - Questions are addressed in a dedicated section with specific recommendations
 
 #### 🔧 Technical Improvements
 - **🐛 Bug Fixes**: Resolved "monthly_purchases is not defined" error
@@ -364,6 +383,11 @@ Finance Budget Script/Test Site/
 - **💳 Enhanced Debt Tracker**: Improved debt management with AI insights
 - **📋 Emoji UI**: Visual section selection with intuitive emojis
 - **🤖 Expanded AI Analysis**: Dedicated debt and subscription optimization
+- **💬 Revolutionary Question System**: 
+  - Ask multiple custom questions before report generation
+  - Select multiple quick questions via checkboxes
+  - Get personalized answers in a dedicated report section
+  - Questions integrated into AI analysis for better responses
 - **🔧 Bug Fixes**: Resolved all major stability issues
 
 ### 🎨 User Experience Enhancements
@@ -374,18 +398,19 @@ Finance Budget Script/Test Site/
 
 ## 🔮 What's Next? (Future Plans)
 
-### Planned Features 🚀
-- **🏦 Multi-Bank Support**: Support for other bank statement formats (not just Monzo!)
-- **🔮 Advanced Analytics**: Machine learning for spending predictions
-- **📱 Mobile App**: Native mobile application
-- **☁️ Cloud Integration**: Sync data across devices
-- **📋 Budget Templates**: Pre-built budget templates for different lifestyles
+*For detailed technical roadmap and current issues, see the **Known Issues & Future Improvements** section above!*
 
-### Technical Improvements 🛠️
-- **🗄️ Database Integration**: Persistent data storage
-- **🔌 API Development**: RESTful API for third-party integrations
-- **🔒 Security Enhancements**: User authentication and data encryption
-- **⚡ Performance Optimization**: Real-time updates and faster processing
+### 🚀 Immediate Priorities
+1. **� Bug Fixes**: Resolve PDF download and AI data reading issues
+2. **🏦 Bank Statement Enhancement**: Improve parsing accuracy and expand bank support
+3. **☁️ Database Integration**: Begin SQL implementation for data persistence
+
+### 🎯 Long-term Vision
+Transform this into a comprehensive financial management platform with:
+- Seamless bank integration
+- AI-powered financial coaching
+- Multi-device synchronization
+- Advanced analytics and predictions
 
 ## 📝 Pro Tips
 
@@ -395,6 +420,48 @@ Finance Budget Script/Test Site/
 4. **📈 Report Review**: Monthly review of generated reports and insights
 5. **🔄 Subscription Audit**: Quarterly review of subscriptions for optimization opportunities
 6. **💳 Debt Management**: Regular review of debt priorities and repayment strategies
+7. **💬 Smart Questions**: 
+   - Ask specific, detailed questions for better AI responses
+   - Use multiple quick questions for comprehensive analysis
+   - Review the "Your Questions Answered" section for personalized advice
+   - Update questions as your financial situation changes
+
+## 🐛 Known Issues & Current Limitations
+
+### ⚠️ Current Issues
+1. **📄 PDF Download Problems**: 
+   - Minor issues when downloading reports in PDF format
+   - Sometimes formatting may not render correctly
+   - Workaround: Use the text download option as an alternative
+
+2. **🤖 AI Data Reading Issues**:
+   - Ollama may occasionally have difficulty reading/processing Excel file data
+   - Sometimes returns generic responses instead of data-specific insights
+   - Workaround: Try re-uploading the file or simplifying the data structure
+
+### 🔧 Future Improvements & Plans
+
+#### 🏦 Bank Statement Processing
+- **Multi-Bank Support**: Expand beyond Monzo to support other bank formats
+- **Enhanced Parsing**: Improve regex patterns for better transaction extraction
+- **Real-time Integration**: Direct API connections to banks (future goal)
+- **Statement Validation**: Better error handling for corrupted or malformed PDFs
+
+#### ☁️ Local Cloud Storage with SQL
+- **Database Integration**: Implement SQLite/PostgreSQL for persistent data storage
+- **Data History**: Track financial changes over time with proper versioning
+- **Multi-device Sync**: Local cloud setup for accessing data across devices
+- **Backup System**: Automated backups with encryption and recovery options
+- **Advanced Queries**: Enable complex financial analysis with SQL queries
+- **Data Security**: Implement user authentication and data encryption
+
+#### 🚀 Technical Roadmap
+- **📱 Mobile App**: Native mobile application for on-the-go access
+- **🔌 API Development**: RESTful API for third-party integrations
+- **🔮 Advanced Analytics**: Machine learning for spending predictions
+- **⚡ Performance**: Real-time updates and faster processing
+- **🎯 Budget Templates**: Pre-built templates for different lifestyles
+- **📊 Advanced Visualizations**: More interactive charts and dashboards
 
 ## 🤝 Contributing
 
@@ -409,9 +476,14 @@ Personal use project - built for individual financial management and life organi
 ---
 
 **Created by**: Anthony Gathukia (that's me! 👋)
-**Last Updated**: January 2026 (Subscription & Debt Update)
-**Version**: 11+ (Enhanced with Subscription Tracker & Improved Debt Management)
+**Last Updated**: January 2026 (Enhanced Question System Update)
+**Version**: 11+ (Enhanced with Subscription Tracker, Improved Debt Management & Revolutionary Question System)
 **Technology**: Python, Streamlit, Excel Integration, AI-Powered Analytics
 **Age**: Born in 2006, currently in my second year of Uni 🎓
 **GitHub**: https://github.com/Maxuimhunter/Finanace-Assistant
-**Recent Changes**: Added Subscription Tracker, enhanced Debt Management, improved AI integration, fixed all major bugs
+**Recent Changes**: 
+- Added Revolutionary Question System with custom and multi-select quick questions
+- Enhanced AI integration with personalized question answering
+- Added Subscription Tracker, enhanced Debt Management
+- Improved UI/UX with better question workflow
+- Fixed all major bugs and stability issues
